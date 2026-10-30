@@ -141,7 +141,7 @@ local HEIGHT = 10
 local SPIN_SPEED = math.rad(2500)
 local BOUNCE_SPEED = 40
 local RISE_SPEED = 20
-local GROUND_PAUSE = 0.1
+local GROUND_PAUSE = 0.3
 
 -- ANTI-FALL SETTINGS
 local MAX_BACKWARD_TILT = 0.3
