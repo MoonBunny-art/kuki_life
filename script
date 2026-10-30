@@ -1,1 +1,2811 @@
-loadstring(game:HttpGet("https://pastebin.com/raw/bQvKXLhW"))()
+
+--// Loading Screen + Blur + schrittweises Laden
+--// Ort: StarterPlayer > StarterPlayerScripts > LocalScript
+
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Einstellungen
+local LOADING_TIME = 4
+local CHUNK_DELAY = 0.03
+
+--// Blur-Effekt
+local blur = Instance.new("BlurEffect")
+blur.Name = "LoadingBlur"
+blur.Size = 0
+blur.Parent = Lighting
+
+TweenService:Create(
+    blur,
+    TweenInfo.new(0.5),
+    {Size = 50}
+):Play()
+
+--// Loading Screen
+local gui = Instance.new("ScreenGui")
+gui.Name = "CustomLoadingScreen"
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 999999
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+local background = Instance.new("Frame")
+background.Size = UDim2.fromScale(1, 1)
+background.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+background.BackgroundTransparency = 0.15
+background.BorderSizePixel = 0
+background.Parent = gui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 60)
+title.Position = UDim2.new(0, 0, 0.35, 0)
+title.BackgroundTransparency = 1
+title.Text = "KUKIRIN LIFE SCRIPT WIRD GELADEN"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = background
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, 0, 0, 30)
+status.Position = UDim2.new(0, 0, 0.44, 0)
+status.BackgroundTransparency = 1
+status.Text = "Bitte warten..."
+status.TextColor3 = Color3.fromRGB(180, 180, 190)
+status.TextScaled = true
+status.Font = Enum.Font.Gotham
+status.Parent = background
+
+local barBackground = Instance.new("Frame")
+barBackground.Size = UDim2.new(0.5, 0, 0, 12)
+barBackground.Position = UDim2.new(0.25, 0, 0.55, 0)
+barBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+barBackground.BorderSizePixel = 0
+barBackground.Parent = background
+
+local barCorner = Instance.new("UICorner")
+barCorner.CornerRadius = UDim.new(1, 0)
+barCorner.Parent = barBackground
+
+local bar = Instance.new("Frame")
+bar.Size = UDim2.fromScale(0, 1)
+bar.BackgroundColor3 = Color3.fromRGB(90, 160, 255)
+bar.BorderSizePixel = 0
+bar.Parent = barBackground
+
+local barFillCorner = Instance.new("UICorner")
+barFillCorner.CornerRadius = UDim.new(1, 0)
+barFillCorner.Parent = bar
+
+local percentage = Instance.new("TextLabel")
+percentage.Size = UDim2.new(1, 0, 0, 30)
+percentage.Position = UDim2.new(0, 0, 0.59, 0)
+percentage.BackgroundTransparency = 1
+percentage.Text = "0%"
+percentage.TextColor3 = Color3.new(1, 1, 1)
+percentage.TextScaled = true
+percentage.Font = Enum.Font.GothamBold
+percentage.Parent = background
+
+--// DEIN EIGENER LOCALSCRIPT-CODE
+-- Füge deinen Code in die Funktion unten ein.
+-- Wichtig: Hier keinen zweiten LocalScript-Text als String einfügen.
+-- Code direkt in diese Funktion schreiben.
+
+local function runCustomCode()
+-- GALAXY FARM GUI + GO TO KUKI
+-- Speed Hack: Beschleunigung bei gedrücktem W
+-- Walk Hack: Horizontale Geschwindigkeit = 40
+-- Anti Ragdoll: verhindert Ragdoll / Hinfallen
+-- Police Mode: Scooter 250 km/h, Walk Speed 120
+-- Anti-Crash: schützt in die tatsächliche Bewegungsrichtung
+-- Go To Kuki: teleportiert zum eigenen Fahrzeug und drückt "Enter"
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://6026984224"
+sound.Volume = 10
+sound.Parent = workspace
+sound:Play()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local farming = false
+local minimized = false
+local guiClosed = false
+local antiCrashEnabled = false
+local ANTI_CRASH_ENABLED = false
+local antiFallEnabled = false
+local antiRagdollEnabled = false
+local policeModeEnabled = false
+local robotEscapeEnabled = false
+local speedHackEnabled = false
+local walkHackEnabled = false
+local wPressed = false
+
+-- GUI SIZE
+local FULL_HEIGHT = 660
+
+-- FARM SETTINGS
+local HEIGHT = 10
+local SPIN_SPEED = math.rad(2500)
+local BOUNCE_SPEED = 40
+local RISE_SPEED = 20
+local GROUND_PAUSE = 0.1
+
+-- ANTI-FALL SETTINGS
+local MAX_BACKWARD_TILT = 0.3
+local ANTI_FALL_SMOOTHNESS = 0.10
+local ANTI_FALL_ANGULAR_DAMPING = 0.85
+
+-- SPEED SETTINGS
+local TARGET_SPEED_KMH = 120
+local STUDS_TO_METERS = 0.28
+local ACCELERATION_KMH_PER_SECOND = 75
+local WALK_SPEED = 60
+
+-- POLICE MODE SETTINGS
+local POLICE_SPEED_KMH = 200
+local POLICE_WALK_SPEED = 100
+
+local function kmhToStudsPerSecond(kmh)
+    return (kmh / 3.6) / STUDS_TO_METERS
+end
+
+-- COLORS
+local PURPLE = Color3.fromRGB(135, 80, 255)
+local BLUE = Color3.fromRGB(60, 130, 255)
+local PINK = Color3.fromRGB(220, 90, 255)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local GREEN = Color3.fromRGB(100, 255, 170)
+local RED = Color3.fromRGB(255, 75, 110)
+
+-- REMOVE OLD GUI
+local oldGui = playerGui:FindFirstChild("FarmMoneyGui")
+if oldGui then
+    oldGui:Destroy()
+end
+
+-- SCREEN GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "FarmMoneyGui"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 100
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = playerGui
+
+-- HELPERS
+local function addCorner(parent, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius)
+    c.Parent = parent
+    return c
+end
+
+local function addStroke(parent, color, thickness, transparency)
+    local s = Instance.new("UIStroke")
+    s.Color = color
+    s.Thickness = thickness
+    s.Transparency = transparency or 0
+    s.Parent = parent
+    return s
+end
+
+local function makeTween(object, duration, properties, style)
+    local t = TweenService:Create(
+        object,
+        TweenInfo.new(
+            duration,
+            style or Enum.EasingStyle.Quad,
+            Enum.EasingDirection.Out
+        ),
+        properties
+    )
+    t:Play()
+    return t
+end
+
+-- MAIN WINDOW
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(320, FULL_HEIGHT)
+main.Position = UDim2.new(0.5, -160, 0.5, -math.floor(FULL_HEIGHT / 2))
+main.BackgroundColor3 = Color3.fromRGB(13, 10, 35)
+main.BorderSizePixel = 0
+main.ClipsDescendants = true
+main.Active = true
+main.Parent = gui
+
+addCorner(main, 18)
+local mainStroke = addStroke(main, PURPLE, 1.5, 0.1)
+
+local mainGradient = Instance.new("UIGradient")
+mainGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 15, 75)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 24, 55))
+})
+mainGradient.Rotation = 35
+mainGradient.Parent = main
+
+-- ANIMATED STARS
+local starLayer = Instance.new("Frame")
+starLayer.Name = "StarLayer"
+starLayer.Size = UDim2.fromScale(1, 1)
+starLayer.BackgroundTransparency = 1
+starLayer.Active = false
+starLayer.ZIndex = 1
+starLayer.Parent = main
+
+local random = Random.new()
+
+for i = 1, 35 do
+    local star = Instance.new("TextLabel")
+    star.Name = "Star"
+    star.BackgroundTransparency = 1
+    star.Active = false
+    star.Selectable = false
+    star.AnchorPoint = Vector2.new(0.5, 0.5)
+    star.Size = UDim2.fromOffset(18, 18)
+    star.Position = UDim2.fromScale(
+        random:NextNumber(0.04, 0.96),
+        random:NextNumber(0.05, 0.95)
+    )
+    star.Text = i % 5 == 0 and "*" or "."
+    star.TextColor3 = i % 4 == 0 and PINK or WHITE
+    star.TextSize = random:NextInteger(10, 19)
+    star.TextTransparency = random:NextNumber(0, 0.4)
+    star.ZIndex = 1
+    star.Parent = starLayer
+
+    task.spawn(function()
+        while star.Parent do
+            local duration = random:NextNumber(1, 3)
+
+            makeTween(star, duration, {
+                TextTransparency = random:NextNumber(0.5, 0.95),
+                Rotation = random:NextInteger(-40, 40),
+                Position = UDim2.fromScale(
+                    random:NextNumber(0.04, 0.96),
+                    random:NextNumber(0.05, 0.95)
+                )
+            }, Enum.EasingStyle.Sine)
+
+            task.wait(duration)
+            if not star.Parent then break end
+
+            makeTween(star, 1, {
+                TextTransparency = random:NextNumber(0, 0.3)
+            }, Enum.EasingStyle.Sine)
+
+            task.wait(1)
+        end
+    end)
+end
+
+-- HEADER
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 45)
+header.BackgroundColor3 = Color3.fromRGB(30, 18, 65)
+header.BackgroundTransparency = 0.08
+header.BorderSizePixel = 0
+header.Active = true
+header.ZIndex = 3
+header.Parent = main
+
+addCorner(header, 16)
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, -105, 1, 0)
+title.Position = UDim2.fromOffset(13, 0)
+title.BackgroundTransparency = 1
+title.Text = "KUKIRIN FARM"
+title.TextColor3 = WHITE
+title.TextSize = 17
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 4
+title.Parent = header
+
+local minimize = Instance.new("TextButton")
+minimize.Name = "Minimize"
+minimize.Size = UDim2.fromOffset(30, 28)
+minimize.Position = UDim2.new(1, -69, 0, 8)
+minimize.BackgroundColor3 = PURPLE
+minimize.Text = "-"
+minimize.TextColor3 = WHITE
+minimize.TextSize = 22
+minimize.Font = Enum.Font.GothamBold
+minimize.BorderSizePixel = 0
+minimize.ZIndex = 5
+minimize.Parent = header
+
+addCorner(minimize, 9)
+
+local close = Instance.new("TextButton")
+close.Name = "Close"
+close.Size = UDim2.fromOffset(30, 28)
+close.Position = UDim2.new(1, -34, 0, 8)
+close.BackgroundColor3 = RED
+close.Text = "X"
+close.TextColor3 = WHITE
+close.TextSize = 18
+close.Font = Enum.Font.GothamBold
+close.BorderSizePixel = 0
+close.ZIndex = 5
+close.Parent = header
+
+addCorner(close, 9)
+
+-- STATUS
+local status = Instance.new("TextLabel")
+status.Name = "Status"
+status.Size = UDim2.new(1, -28, 0, 25)
+status.Position = UDim2.fromOffset(14, 54)
+status.BackgroundTransparency = 1
+status.Text = "SYSTEM READY"
+status.TextColor3 = GREEN
+status.TextSize = 12
+status.Font = Enum.Font.GothamMedium
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.ZIndex = 4
+status.Parent = main
+
+-- BUTTON CREATOR
+local function createButton(
+    name, text, y, baseColor, strokeColor, gradientColors
+)
+    local b = Instance.new("TextButton")
+    b.Name = name
+    b.Size = UDim2.new(1, -32, 0, 42)
+    b.Position = UDim2.fromOffset(16, y)
+    b.BackgroundColor3 = baseColor
+    b.Text = text
+    b.TextColor3 = WHITE
+    b.TextSize = 16
+    b.Font = Enum.Font.GothamBold
+    b.AutoButtonColor = false
+    b.BorderSizePixel = 0
+    b.ZIndex = 5
+    b.Parent = main
+
+    addCorner(b, 13)
+    local stroke = addStroke(b, strokeColor, 1.5)
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, gradientColors[1]),
+        ColorSequenceKeypoint.new(1, gradientColors[2])
+    })
+    gradient.Parent = b
+
+    b.MouseEnter:Connect(function()
+        if b.Parent then
+            makeTween(stroke, 0.15, {Thickness = 2})
+        end
+    end)
+
+    b.MouseLeave:Connect(function()
+        if b.Parent then
+            makeTween(stroke, 0.15, {Thickness = 1.5})
+        end
+    end)
+
+    return b, stroke, gradient
+end
+
+-- FARM MONEY BUTTON
+local button, buttonStroke, buttonGradient = createButton(
+    "farm_money",
+    "FARM MONEY: OFF",
+    84,
+    PURPLE,
+    Color3.fromRGB(220, 200, 255),
+    {
+        Color3.fromRGB(145, 95, 255),
+        Color3.fromRGB(75, 145, 255)
+    }
+)
+
+button.TextColor3 = Color3.fromRGB(255, 0, 0)
+button.TextStrokeTransparency = 0.8
+button.TextStrokeColor3 = Color3.fromRGB(30, 15, 65)
+
+-- ANTI-CRASH BUTTON
+local antiCrashButton, antiCrashStroke, antiCrashGradient =
+    createButton(
+        "AntiCrashButton",
+        "ANTI-CRASH: OFF",
+        133,
+        Color3.fromRGB(35, 75, 105),
+        BLUE,
+        {
+            Color3.fromRGB(35, 95, 140),
+            Color3.fromRGB(50, 55, 125)
+        }
+    )
+
+-- ANTI-FALL BUTTON
+local antiFallButton, antiFallStroke, antiFallGradient =
+    createButton(
+        "AntiFallButton",
+        "ANTI-FALL: OFF",
+        182,
+        Color3.fromRGB(75, 65, 35),
+        Color3.fromRGB(255, 190, 80),
+        {
+            Color3.fromRGB(160, 115, 40),
+            Color3.fromRGB(110, 65, 35)
+        }
+    )
+
+-- SPEED HACK BUTTON
+local speedButton, speedStroke, speedGradient = createButton(
+    "SpeedHackButton",
+    "SCOOTER HACK: OFF",
+    231,
+    Color3.fromRGB(55, 45, 110),
+    PURPLE,
+    {
+        Color3.fromRGB(145, 75, 255),
+        Color3.fromRGB(65, 100, 230)
+    }
+)
+
+-- WALK HACK BUTTON
+local walkButton, walkStroke, walkGradient = createButton(
+    "WalkHackButton",
+    "WALK HACK: OFF",
+    280,
+    Color3.fromRGB(35, 75, 105),
+    BLUE,
+    {
+        Color3.fromRGB(35, 145, 180),
+        Color3.fromRGB(55, 85, 200)
+    }
+)
+
+-- ANTI RAGDOLL BUTTON
+local ragdollButton, ragdollStroke, ragdollGradient = createButton(
+    "AntiRagdollButton",
+    "ANTI RAGDOLL: OFF",
+    329,
+    Color3.fromRGB(95, 45, 75),
+    PINK,
+    {
+        Color3.fromRGB(180, 65, 140),
+        Color3.fromRGB(110, 55, 170)
+    }
+)
+
+-- POLICE MODE BUTTON
+local policeButton, policeStroke, policeGradient = createButton(
+    "PoliceModeButton",
+    "POLICE MODE: OFF",
+    378,
+    Color3.fromRGB(30, 50, 115),
+    Color3.fromRGB(120, 170, 255),
+    {
+        Color3.fromRGB(40, 80, 200),
+        Color3.fromRGB(150, 45, 80)
+    }
+)
+
+-- ROBOT ESCAPE BUTTON
+local robotButton, robotStroke, robotGradient = createButton(
+    "RobotEscapeButton",
+    "POLICE ESCAPE: OFF",
+    427,
+    Color3.fromRGB(95, 60, 30),
+    Color3.fromRGB(255, 160, 70),
+    {
+        Color3.fromRGB(220, 110, 40),
+        Color3.fromRGB(150, 50, 70)
+    }
+)
+
+-- GO TO KUKI BUTTON
+local kukiButton, kukiStroke, kukiGradient = createButton(
+    "GoToKukiButton",
+    "GO TO KUKI",
+    476,
+    Color3.fromRGB(35, 115, 90),
+    GREEN,
+    {
+        Color3.fromRGB(35, 145, 95),
+        Color3.fromRGB(35, 95, 120)
+    }
+)
+
+-- SPEED READOUT LABEL
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Name = "SpeedLabel"
+speedLabel.Size = UDim2.new(1, -28, 0, 22)
+speedLabel.Position = UDim2.fromOffset(14, 525)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "SPEED: 0 KM/H"
+speedLabel.TextColor3 = WHITE
+speedLabel.TextSize = 13
+speedLabel.Font = Enum.Font.GothamBold
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.ZIndex = 4
+speedLabel.Parent = main
+
+-- FOOTER
+local footer = Instance.new("TextLabel")
+footer.Size = UDim2.new(1, 0, 0, 20)
+footer.Position = UDim2.new(0, 0, 1, -22)
+footer.BackgroundTransparency = 1
+footer.Text = "GALAXY EDITION"
+footer.TextColor3 = Color3.fromRGB(200, 190, 230)
+footer.TextSize = 10
+footer.Font = Enum.Font.GothamMedium
+footer.ZIndex = 4
+footer.Parent = main
+
+-- DRAGGING
+local dragging = false
+local dragStart
+local startPosition
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPosition = main.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not dragging then return end
+
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - dragStart
+
+        main.Position = UDim2.new(
+            startPosition.X.Scale,
+            startPosition.X.Offset + delta.X,
+            startPosition.Y.Scale,
+            startPosition.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+-- VEHICLE HELPERS
+local function getVehicle()
+    local character = player.Character
+    local humanoid = character
+        and character:FindFirstChildOfClass("Humanoid")
+
+    if not humanoid then return end
+
+    local seat = humanoid.SeatPart
+
+    if not seat or not seat:IsA("VehicleSeat") then
+        return
+    end
+
+    local vehicle = seat:FindFirstAncestorOfClass("Model")
+
+    if not vehicle or not vehicle.PrimaryPart then
+        return
+    end
+
+    return vehicle, seat, humanoid
+end
+
+local function getSpeedKmh(vehicle)
+    if not vehicle or not vehicle.PrimaryPart then
+        return 0
+    end
+
+    return vehicle.PrimaryPart.AssemblyLinearVelocity.Magnitude
+        * STUDS_TO_METERS * 3.6
+end
+
+local function restoreStatus()
+    if policeModeEnabled then
+        status.Text = "POLICE MODE ACTIVE"
+    elseif farming then
+        status.Text = "FARMING ACTIVE"
+    else
+        status.Text = "SYSTEM READY"
+    end
+    status.TextColor3 = GREEN
+end
+
+-- FARM LOGIC
+local function startFarm()
+    while farming and gui.Parent do
+        local vehicle, seat, humanoid = getVehicle()
+
+        if not vehicle then
+            status.Text = "SIT IN YOUR SCOOTER"
+            status.TextColor3 = RED
+            task.wait(0.5)
+
+            if farming and gui.Parent then
+                status.Text = "FARMING ACTIVE"
+                status.TextColor3 = GREEN
+            end
+
+            continue
+        end
+
+        local startPos = vehicle:GetPivot().Position
+
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances = {vehicle}
+
+        local result = workspace:Raycast(
+            startPos + Vector3.new(0, 3, 0),
+            Vector3.new(0, -500, 0),
+            params
+        )
+
+        if not result then
+            task.wait(0.2)
+            continue
+        end
+
+        local pivotOffset = startPos.Y - result.Position.Y
+        local groundPivotY = result.Position.Y + pivotOffset
+
+        local y = groundPivotY
+        local velocity = RISE_SPEED
+        local angle = 0
+        local onGround = false
+        local root = vehicle.PrimaryPart
+
+        while farming and gui.Parent
+            and vehicle.Parent and root.Parent
+            and humanoid.Health > 0
+            and humanoid.SeatPart == seat do
+
+            local dt = math.min(
+                RunService.Heartbeat:Wait(),
+                1 / 30
+            )
+
+            if onGround then
+                y = groundPivotY
+                velocity = 0
+
+                vehicle:PivotTo(
+                    CFrame.new(
+                        startPos.X,
+                        groundPivotY,
+                        startPos.Z
+                    ) * CFrame.Angles(0, angle, 0)
+                )
+
+                root.AssemblyLinearVelocity = Vector3.zero
+                task.wait(GROUND_PAUSE)
+
+                if not farming or not vehicle.Parent then
+                    break
+                end
+
+                velocity = BOUNCE_SPEED
+                onGround = false
+            else
+                velocity -= workspace.Gravity * dt
+                y += velocity * dt
+
+                if y >= groundPivotY + HEIGHT then
+                    y = groundPivotY + HEIGHT
+                    velocity = 0
+                end
+
+                if y <= groundPivotY and velocity < 0 then
+                    y = groundPivotY
+                    velocity = 0
+                    onGround = true
+                end
+            end
+
+            angle += SPIN_SPEED * dt
+
+            vehicle:PivotTo(
+                CFrame.new(
+                    startPos.X,
+                    y,
+                    startPos.Z
+                ) * CFrame.Angles(0, angle, 0)
+            )
+
+            if root and not root.Anchored and not onGround then
+                root.AssemblyLinearVelocity = Vector3.new(
+                    root.AssemblyLinearVelocity.X,
+                    velocity,
+                    root.AssemblyLinearVelocity.Z
+                )
+            end
+        end
+
+        task.wait(0.1)
+    end
+end
+
+-- ANTI-CRASH SETTINGS
+local MIN_CHECK_DISTANCE = 13
+local ROBOT_PAUSE_DISTANCE = 25   -- Studs
+local ROBOT_PAUSE_SECONDS = 1     -- Dauer der Pause
+local antiCrashPausedUntil = 0
+local MAX_CHECK_DISTANCE = 60
+local LOOKAHEAD_SECONDS = 0
+local SIDE_RAY_OFFSET = 5
+local RETREAT_DISTANCE = 5
+local STOP_SPEED = 5
+local MIN_MOVE_SPEED = 25
+local antiCrashBusy = false
+
+-- Bewegungsrichtung ermitteln (unabhängig davon, wohin der
+-- Körper / die Nase des Scooters schaut).
+local function getMovementDirection(vehicle, seat, root, humanoid)
+    -- 1) Tatsächliche Bewegung des Fahrzeugs
+    local vel = root.AssemblyLinearVelocity
+    local horizontal = Vector3.new(vel.X, 0, vel.Z)
+
+    if horizontal.Magnitude > MIN_MOVE_SPEED then
+        return horizontal.Unit, horizontal.Magnitude
+    end
+
+    -- 2) Eingabe des Spielers (Steuerrichtung)
+    if humanoid then
+        local move = humanoid.MoveDirection
+        local flat = Vector3.new(move.X, 0, move.Z)
+
+        if flat.Magnitude > 0.1 then
+            return flat.Unit, 0
+        end
+    end
+
+    -- 3) Gas / Lenkung vom VehicleSeat
+    if seat and seat:IsA("VehicleSeat") then
+        local cf = vehicle:GetPivot()
+        local look = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+        local right = Vector3.new(cf.RightVector.X, 0, cf.RightVector.Z)
+        local dir = look * seat.ThrottleFloat + right * seat.SteerFloat
+
+        if dir.Magnitude > 0.1 then
+            return dir.Unit, 0
+        end
+    end
+
+    return nil, 0
+end
+local function runAntiCrash()
+    if antiCrashBusy
+        or not ANTI_CRASH_ENABLED
+        or os.clock() < antiCrashPausedUntil   -- NEU
+        or farming
+        or not gui.Parent then
+        return
+    end
+
+    local vehicle, seat, humanoid = getVehicle()
+
+    if not vehicle or not seat or not vehicle.PrimaryPart then
+        return
+    end
+
+    local root = vehicle.PrimaryPart
+    local pivot = vehicle:GetPivot()
+
+    local direction, speed =
+        getMovementDirection(vehicle, seat, root, humanoid)
+
+    -- Keine Bewegung = nichts zu schützen
+    if not direction then return end
+
+    local checkDistance = math.clamp(
+        speed * LOOKAHEAD_SECONDS,
+        MIN_CHECK_DISTANCE,
+        MAX_CHECK_DISTANCE
+    )
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = {
+        vehicle,
+        player.Character
+    }
+    params.IgnoreWater = true
+
+    local origin = pivot.Position + Vector3.new(0, 1.5, 0)
+    local sideways = direction:Cross(Vector3.yAxis)
+
+    -- Drei Strahlen: Mitte, links, rechts (relativ zur Bewegung)
+    local offsets = {
+        Vector3.zero,
+        sideways * SIDE_RAY_OFFSET,
+        -sideways * SIDE_RAY_OFFSET
+    }
+
+    local hit
+
+    for _, offset in ipairs(offsets) do
+        hit = workspace:Raycast(
+            origin + offset,
+            direction * checkDistance,
+            params
+        )
+
+        if hit then break end
+    end
+
+    if not hit then return end
+
+    antiCrashBusy = true
+
+    -- Entgegen der Bewegungsrichtung zurücksetzen
+    vehicle:PivotTo(pivot + (-direction * RETREAT_DISTANCE))
+
+    local holdPivot = vehicle:GetPivot()
+    local elapsed = 0
+    local holdTimeout = 0.6
+
+    while gui.Parent and vehicle.Parent
+        and seat.Parent and elapsed < holdTimeout do
+
+        local dt = RunService.Heartbeat:Wait()
+        elapsed += dt
+
+        if not root.Parent then break end
+
+        local currentVehicle = getVehicle()
+
+        if currentVehicle ~= vehicle then
+            break
+        end
+
+        local currentSpeed = root.AssemblyLinearVelocity.Magnitude
+
+        if currentSpeed <= STOP_SPEED then
+            break
+        end
+
+        vehicle:PivotTo(holdPivot)
+
+        root.AssemblyLinearVelocity *= math.max(0, 1 - dt * 3)
+        root.AssemblyAngularVelocity *= math.max(0, 1 - dt * 3)
+    end
+
+    antiCrashBusy = false
+end
+
+-- ANTI-FALL
+local antiFallBusy = false
+
+local function runAntiFall()
+    if not antiFallEnabled
+        or antiFallBusy
+        or farming
+        or not gui.Parent then
+        return
+    end
+
+    local vehicle, seat, humanoid = getVehicle()
+
+    if not vehicle or not seat or not humanoid
+        or humanoid.Health <= 0
+        or not vehicle.PrimaryPart then
+        return
+    end
+
+    local pivot = vehicle:GetPivot()
+    local pitch, yaw, roll = pivot:ToOrientation()
+
+    if pitch > MAX_BACKWARD_TILT then
+        antiFallBusy = true
+
+        local correctedPivot = CFrame.new(pivot.Position)
+            * CFrame.fromOrientation(
+                MAX_BACKWARD_TILT,
+                yaw,
+                roll
+            )
+
+        local currentVehicle, currentSeat, currentHumanoid =
+            getVehicle()
+
+        if currentVehicle == vehicle
+            and currentSeat == seat
+            and currentHumanoid == humanoid
+            and vehicle.Parent
+            and vehicle.PrimaryPart then
+
+            vehicle:PivotTo(
+                pivot:Lerp(
+                    correctedPivot,
+                    ANTI_FALL_SMOOTHNESS
+                )
+            )
+
+            local root = vehicle.PrimaryPart
+            local av = root.AssemblyAngularVelocity
+
+            root.AssemblyAngularVelocity = Vector3.new(
+                av.X * ANTI_FALL_ANGULAR_DAMPING,
+                av.Y,
+                av.Z * ANTI_FALL_ANGULAR_DAMPING
+            )
+        end
+
+        antiFallBusy = false
+    end
+end
+
+-- ANTI RAGDOLL
+-- Beim Start werden alle Gelenke (Motor6D) des Körpers gesichert.
+-- Zerstört oder deaktiviert das Spiel ein Gelenk, wird es sofort neu
+-- erstellt / aktiviert. Ragdoll-Constraints (BallSocket) werden NUR
+-- abgeschaltet, wenn alle Gelenke intakt sind -> keine auseinander-
+-- fliegenden Körperteile mehr.
+local RAGDOLL_STATES = {
+    Enum.HumanoidStateType.Ragdoll,
+    Enum.HumanoidStateType.FallingDown,
+    Enum.HumanoidStateType.PlatformStanding,
+    Enum.HumanoidStateType.Physics,
+}
+
+local ragdollConnections = {}
+local ragdollCharConn
+local jointSnapshot = {}
+local ballSockets = {}
+
+local function isRagdollState(state)
+    for _, s in ipairs(RAGDOLL_STATES) do
+        if s == state then return true end
+    end
+    return false
+end
+
+local function isRagdollName(name)
+    return string.find(string.lower(name), "ragdoll", 1, true) ~= nil
+end
+
+local function ragdollConnect(signal, fn)
+    table.insert(ragdollConnections, signal:Connect(fn))
+end
+
+local function setRagdollStatesEnabled(humanoid, enabled)
+    for _, state in ipairs(RAGDOLL_STATES) do
+        pcall(function()
+            humanoid:SetStateEnabled(state, enabled)
+        end)
+    end
+end
+
+local function clearRagdollHooks()
+    for _, c in ipairs(ragdollConnections) do
+        c:Disconnect()
+    end
+    table.clear(ragdollConnections)
+    table.clear(jointSnapshot)
+    table.clear(ballSockets)
+end
+
+local function takeJointSnapshot(character)
+    table.clear(jointSnapshot)
+
+    for _, obj in ipairs(character:GetDescendants()) do
+        if obj:IsA("Motor6D") and obj.Part0 and obj.Part1 then
+            table.insert(jointSnapshot, {
+                name = obj.Name,
+                parent = obj.Parent,
+                part0 = obj.Part0,
+                part1 = obj.Part1,
+                c0 = obj.C0,
+                c1 = obj.C1,
+                motor = obj,
+            })
+        end
+    end
+end
+
+-- Stellt alle Gelenke wieder her. Gibt true zurück, wenn alle intakt sind.
+local function restoreJoints()
+    local healthy = #jointSnapshot > 0
+
+    for _, e in ipairs(jointSnapshot) do
+        local motor = e.motor
+
+        if not motor or not motor.Parent then
+            motor = nil
+
+            if e.parent and e.parent.Parent then
+                local existing = e.parent:FindFirstChild(e.name)
+
+                if existing and existing:IsA("Motor6D") then
+                    motor = existing
+                end
+            end
+
+            if not motor
+                and e.parent and e.parent.Parent
+                and e.part0.Parent and e.part1.Parent then
+                motor = Instance.new("Motor6D")
+                motor.Name = e.name
+                motor.Part0 = e.part0
+                motor.Part1 = e.part1
+                motor.C0 = e.c0
+                motor.C1 = e.c1
+                motor.Parent = e.parent
+            end
+
+            e.motor = motor
+        end
+
+        if motor then
+            if motor.Part0 ~= e.part0 then motor.Part0 = e.part0 end
+            if motor.Part1 ~= e.part1 then motor.Part1 = e.part1 end
+            if not motor.Enabled then motor.Enabled = true end
+        else
+            healthy = false
+        end
+    end
+
+    return healthy
+end
+
+local function disableBallSockets()
+    for sock in pairs(ballSockets) do
+        if sock.Parent then
+            if sock.Enabled then
+                sock.Enabled = false
+            end
+        else
+            ballSockets[sock] = nil
+        end
+    end
+end
+
+local function standUp(humanoid, root, character)
+    local healthy = restoreJoints()
+
+    if healthy then
+        disableBallSockets()
+    end
+
+    if humanoid.SeatPart then return end
+
+    if humanoid.PlatformStand then
+        humanoid.PlatformStand = false
+    end
+
+    if isRagdollState(humanoid:GetState()) then
+        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+
+    -- Flach am Boden: ganzes Modell aufrichten (nur bei intakten Gelenken)
+    if healthy and root and not root.Anchored
+        and root.CFrame.UpVector.Y < 0.4 then
+        local cf = root.CFrame
+        local flat = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+
+        if flat.Magnitude < 0.1 then
+            flat = Vector3.new(cf.UpVector.X, 0, cf.UpVector.Z)
+        end
+
+        if flat.Magnitude < 0.1 then
+            flat = Vector3.zAxis
+        end
+
+        local pos = root.Position + Vector3.new(0, 3, 0)
+
+        character:PivotTo(CFrame.lookAt(pos, pos + flat.Unit))
+        root.AssemblyAngularVelocity = Vector3.zero
+    end
+end
+
+local function neutralize(obj)
+    if obj:IsA("BallSocketConstraint") then
+        ballSockets[obj] = true
+    elseif obj:IsA("BoolValue") and isRagdollName(obj.Name) then
+        obj.Value = false
+
+        ragdollConnect(obj:GetPropertyChangedSignal("Value"), function()
+            if antiRagdollEnabled and obj.Value then
+                obj.Value = false
+            end
+        end)
+    end
+end
+
+local function watchAttributes(inst)
+    ragdollConnect(inst.AttributeChanged, function(name)
+        if antiRagdollEnabled
+            and isRagdollName(name)
+            and inst:GetAttribute(name) == true then
+            inst:SetAttribute(name, false)
+        end
+    end)
+
+    for name, value in pairs(inst:GetAttributes()) do
+        if isRagdollName(name) and value == true then
+            inst:SetAttribute(name, false)
+        end
+    end
+end
+
+local function hookCharacter(character)
+    if not character or not antiRagdollEnabled then return end
+
+    local humanoid = character:WaitForChild("Humanoid", 5)
+    local root = character:WaitForChild("HumanoidRootPart", 5)
+
+    if not humanoid or not root or not antiRagdollEnabled then return end
+
+    takeJointSnapshot(character)
+    setRagdollStatesEnabled(humanoid, false)
+
+    ragdollConnect(humanoid.StateChanged, function(_, new)
+        if antiRagdollEnabled and isRagdollState(new) then
+            print("[AntiRagdoll] blockiert Zustand:", tostring(new))
+            standUp(humanoid, root, character)
+        end
+    end)
+
+    ragdollConnect(
+        humanoid:GetPropertyChangedSignal("PlatformStand"),
+        function()
+            if antiRagdollEnabled
+                and humanoid.PlatformStand
+                and not humanoid.SeatPart then
+                humanoid.PlatformStand = false
+            end
+        end
+    )
+
+    ragdollConnect(character.DescendantAdded, function(obj)
+        if antiRagdollEnabled then
+            neutralize(obj)
+        end
+    end)
+
+    -- Wird ein Gelenk entfernt: sofort wiederherstellen
+    ragdollConnect(character.DescendantRemoving, function(obj)
+        if antiRagdollEnabled and obj:IsA("Motor6D") then
+            task.defer(function()
+                if antiRagdollEnabled and character.Parent then
+                    standUp(humanoid, root, character)
+                end
+            end)
+        end
+    end)
+
+    for _, obj in ipairs(character:GetDescendants()) do
+        neutralize(obj)
+    end
+
+    watchAttributes(character)
+    watchAttributes(humanoid)
+    watchAttributes(player)
+
+    ragdollConnect(RunService.Heartbeat, function()
+        if not antiRagdollEnabled
+            or humanoid.Health <= 0
+            or not character.Parent then
+            return
+        end
+
+        setRagdollStatesEnabled(humanoid, false)
+        standUp(humanoid, root, character)
+    end)
+end
+
+local function startAntiRagdoll()
+    clearRagdollHooks()
+
+    if player.Character then
+        task.spawn(hookCharacter, player.Character)
+    end
+
+    if ragdollCharConn then
+        ragdollCharConn:Disconnect()
+    end
+
+    ragdollCharConn = player.CharacterAdded:Connect(function(character)
+        clearRagdollHooks()
+        task.wait(0.5)
+        hookCharacter(character)
+    end)
+end
+
+local function stopAntiRagdoll()
+    clearRagdollHooks()
+
+    if ragdollCharConn then
+        ragdollCharConn:Disconnect()
+        ragdollCharConn = nil
+    end
+
+    local character = player.Character
+    local humanoid = character
+        and character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid then
+        setRagdollStatesEnabled(humanoid, true)
+    end
+end
+
+-- ROBOT ESCAPE
+-- Kommt ein Roboter/Dummy (Humanoid, der KEIN Spieler ist) auf
+-- ESCAPE_TRIGGER_DISTANCE heran, wirst du ESCAPE_DISTANCE von ihm weg
+-- auf eine freie, ebene Fläche teleportiert.
+local ESCAPE_TRIGGER_DISTANCE = 10
+local ESCAPE_DISTANCE = 20
+local ESCAPE_COOLDOWN = 0.35
+local lastEscapeTime = 0
+
+local function getHumanoidModel(inst)
+    while inst and inst ~= workspace do
+        if inst:IsA("Model")
+            and inst:FindFirstChildOfClass("Humanoid") then
+            return inst
+        end
+
+        inst = inst.Parent
+    end
+
+    return nil
+end
+
+local function isRobotModel(model)
+    if not model then return false end
+    if model == player.Character then return false end
+    if Players:GetPlayerFromCharacter(model) then return false end
+
+    local hum = model:FindFirstChildOfClass("Humanoid")
+
+    return hum ~= nil and hum.Health > 0
+end
+
+local function makeOverlapParams(ignore)
+    local params = OverlapParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = ignore
+    params.MaxParts = 300
+    return params
+end
+
+-- Schnelle Roboter-Erkennung: Cache aller Humanoid-Modelle statt
+-- Overlap-Abfrage. Zusätzlich wird die Bewegung des Roboters
+-- vorausberechnet, damit auch schnelle Roboter früh erkannt werden.
+local ESCAPE_LOOKAHEAD = 0.12
+local robotCache = {}
+
+local function registerRobot(inst)
+    if inst:IsA("Humanoid")
+        and inst.Parent
+        and inst.Parent:IsA("Model") then
+        robotCache[inst.Parent] = true
+    end
+end
+
+task.spawn(function()
+    for _, inst in ipairs(workspace:GetDescendants()) do
+        registerRobot(inst)
+    end
+end)
+
+local robotAddedConn = workspace.DescendantAdded:Connect(registerRobot)
+
+local function findNearestRobot(position, radius)
+    local bestModel, bestRoot, bestDist
+
+    for model in pairs(robotCache) do
+        if not model.Parent then
+            robotCache[model] = nil
+        elseif isRobotModel(model) then
+            local r = model:FindFirstChild("HumanoidRootPart")
+                or model.PrimaryPart
+
+            if r then
+                local predicted = r.Position
+                    + r.AssemblyLinearVelocity * ESCAPE_LOOKAHEAD
+                local d = math.min(
+                    (r.Position - position).Magnitude,
+                    (predicted - position).Magnitude
+                )
+
+                if d <= radius and (not bestDist or d < bestDist) then
+                    bestModel, bestRoot, bestDist = model, r, d
+                end
+            end
+        end
+    end
+
+    return bestModel, bestRoot
+end
+
+local function findFreeSpot(robotPos, away, size, refY, ignore)
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.FilterDescendantsInstances = ignore
+    rayParams.IgnoreWater = true
+
+    local boxParams = makeOverlapParams(ignore)
+
+    local distances = {
+        ESCAPE_DISTANCE,
+        ESCAPE_DISTANCE + 4,
+        ESCAPE_DISTANCE + 8,
+    }
+    local angles = {
+        0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180
+    }
+
+    for _, dist in ipairs(distances) do
+        for _, angle in ipairs(angles) do
+            local dir = CFrame.Angles(0, math.rad(angle), 0)
+                :VectorToWorldSpace(away)
+            local flat = robotPos + dir * dist
+
+            local result = workspace:Raycast(
+                Vector3.new(flat.X, refY + 8, flat.Z),
+                Vector3.new(0, -80, 0),
+                rayParams
+            )
+
+            if result
+                and result.Normal.Y > 0.85
+                and math.abs(result.Position.Y - refY) < 15
+                and not getHumanoidModel(result.Instance) then
+
+                local spot = result.Position
+                local boxCF = CFrame.new(
+                    spot + Vector3.new(0, size.Y / 2 + 0.6, 0)
+                )
+
+                local blocked = false
+
+                for _, part in ipairs(
+                    workspace:GetPartBoundsInBox(boxCF, size, boxParams)
+                ) do
+                    if part.CanCollide then
+                        blocked = true
+                        break
+                    end
+                end
+
+                if not blocked
+                    and not findNearestRobot(
+                        spot + Vector3.new(0, 3, 0),
+                        ESCAPE_TRIGGER_DISTANCE,
+                        ignore
+                    ) then
+                    return spot
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
+local function runRobotEscape()
+    if not robotEscapeEnabled or farming or not gui.Parent then
+        return
+    end
+
+    if os.clock() - lastEscapeTime < ESCAPE_COOLDOWN then
+        return
+    end
+
+    local character = player.Character
+    local humanoid = character
+        and character:FindFirstChildOfClass("Humanoid")
+    local root = character
+        and character:FindFirstChild("HumanoidRootPart")
+
+    if not humanoid or not root or humanoid.Health <= 0 then
+        return
+    end
+
+    local vehicle = getVehicle()
+    local subjectRoot = vehicle and vehicle.PrimaryPart or root
+
+    local ignore = {character}
+
+    if vehicle then
+        table.insert(ignore, vehicle)
+    end
+
+    local origin = subjectRoot.Position
+
+    local robot, robotRoot = findNearestRobot(
+        origin,
+        ESCAPE_TRIGGER_DISTANCE,
+        ignore
+    )
+
+    if not robot then return end
+
+    lastEscapeTime = os.clock()
+
+    local away = Vector3.new(
+        origin.X - robotRoot.Position.X,
+        0,
+        origin.Z - robotRoot.Position.Z
+    )
+
+    if away.Magnitude < 0.1 then
+        local look = subjectRoot.CFrame.LookVector
+        away = Vector3.new(look.X, 0, look.Z)
+    end
+
+    if away.Magnitude < 0.1 then
+        away = Vector3.xAxis
+    end
+
+    away = away.Unit
+
+    local size = vehicle and vehicle:GetExtentsSize()
+        or Vector3.new(4, 5, 4)
+
+    size = Vector3.new(
+        math.clamp(size.X, 4, 14),
+        math.clamp(size.Y, 5, 14),
+        math.clamp(size.Z, 4, 14)
+    )
+
+    local pivot = vehicle and vehicle:GetPivot() or character:GetPivot()
+
+    -- Höhe des Pivots über dem aktuellen Boden
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.FilterDescendantsInstances = ignore
+    rayParams.IgnoreWater = true
+
+    local down = workspace:Raycast(
+        pivot.Position + Vector3.new(0, 2, 0),
+        Vector3.new(0, -30, 0),
+        rayParams
+    )
+
+    local offsetY = down and (pivot.Position.Y - down.Position.Y) or 3
+    offsetY = math.clamp(offsetY, 1, 6)
+
+    local spot = findFreeSpot(
+        robotRoot.Position,
+        away,
+        size,
+        origin.Y,
+        ignore
+    )
+
+    local newCFrame = CFrame.new(spot + Vector3.new(0, offsetY + 0.3, 0))
+        * pivot.Rotation
+
+    if vehicle then
+        vehicle:PivotTo(newCFrame)
+    else
+        character:PivotTo(newCFrame)
+    end
+
+    subjectRoot.AssemblyLinearVelocity = Vector3.zero
+    subjectRoot.AssemblyAngularVelocity = Vector3.zero
+
+    status.Text = "POLICE ESCAPE: TELEPORTED"
+    status.TextColor3 = GREEN
+
+    task.delay(1.5, function()
+        if gui.Parent then
+            restoreStatus()
+        end
+    end)
+end
+
+-- GO TO KUKI
+local KUKI_PROMPT_ACTION = "Enter"
+local KUKI_PROMPT_KEY = Enum.KeyCode.E
+local KUKI_TELEPORT_OFFSET = CFrame.new(0, 3, 0)
+local KUKI_USE_NAME_FILTER = true   -- true = nur Fahrzeuge aus der Liste unten
+local KUKI_WAIT_ONE_FRAME = false   -- auf true setzen, falls der Server den Prompt sonst ignoriert
+local KUKI_SECOND_PRESS_DELAY = 0.15
+
+local KUKI_VEHICLE_NAMES = {
+    ["g2"] = true,
+    ["g2 ultra"] = true,
+    ["g2 master"] = true,
+    ["g2 max"] = true,
+    ["duol lightning 3"] = true,
+    ["g3"] = true,
+    ["g4"] = true,
+    ["g4 ultra"] = true,
+    ["g5"] = true,
+}
+
+local runKuki
+
+do
+    local function norm(s)
+        return string.lower((tostring(s):gsub("^%s+", ""):gsub("%s+$", "")))
+    end
+
+    local myNames = { norm(player.Name), norm(player.DisplayName) }
+
+    local function isMine(name)
+        local n = norm(name)
+        for _, mine in ipairs(myNames) do
+            if n == "ride_" .. mine or n:find(mine, 1, true) then
+                return true
+            end
+        end
+        return false
+    end
+
+    local function belongsToMe(prompt, rootInst)
+        local current = prompt.Parent
+        while current and current ~= rootInst and current ~= workspace do
+            if isMine(current.Name) then return true end
+            current = current.Parent
+        end
+        return false
+    end
+
+    local function isVehicleInList(prompt)
+        if KUKI_VEHICLE_NAMES[norm(prompt.ObjectText)] then return true end
+        local current = prompt.Parent
+        while current and current ~= workspace do
+            if KUKI_VEHICLE_NAMES[norm(current.Name)] then return true end
+            current = current.Parent
+        end
+        return false
+    end
+
+    local function isEnterPrompt(prompt)
+        return prompt:IsA("ProximityPrompt")
+            and prompt.ActionText == KUKI_PROMPT_ACTION
+            and prompt.KeyboardKeyCode == KUKI_PROMPT_KEY
+    end
+
+    local function getPromptCFrame(prompt)
+        local p = prompt.Parent
+        if p and p:IsA("BasePart") then return p.CFrame end
+        if p and p:IsA("Attachment") then return p.WorldCFrame end
+        if p and p:IsA("Model") then return p:GetPivot() end
+    end
+
+    local function findMyPrompt()
+        local rides = workspace:FindFirstChild("Rides") or workspace
+        local total, mine = 0, 0
+
+        for _, obj in ipairs(rides:GetDescendants()) do
+            if isEnterPrompt(obj) then
+                total += 1
+                if belongsToMe(obj, rides) then
+                    mine += 1
+                    if not KUKI_USE_NAME_FILTER or isVehicleInList(obj) then
+                        print(("[DEBUG] Gefunden: %s | ObjectText: %s")
+                            :format(obj:GetFullName(), obj.ObjectText))
+                        return obj
+                    end
+                end
+            end
+        end
+
+        print(("[DEBUG] Enter-Knöpfe gesamt: %d | davon von mir (%s): %d")
+            :format(total, player.Name, mine))
+        return nil
+    end
+
+    local function pressPrompt(prompt)
+        prompt.Enabled = true
+        prompt.HoldDuration = 0
+        prompt:InputHoldBegin()
+        prompt:InputHoldEnd()
+    end
+
+    local kukiBusy = false
+
+    local function runOnce()
+        if kukiBusy then return end
+        kukiBusy = true
+
+        local character = player.Character
+        local humanoid = character
+            and character:FindFirstChildOfClass("Humanoid")
+
+        if not character or not humanoid or humanoid.SeatPart then
+            kukiBusy = false
+            return
+        end
+
+        local prompt = findMyPrompt()
+        if not prompt then
+            warn("[DEBUG] Dein Fahrzeug wurde nicht gefunden (ist es gespawnt und geladen?)")
+            status.Text = "KUKI: VEHICLE NOT FOUND"
+            status.TextColor3 = RED
+            kukiBusy = false
+            return
+        end
+
+        local cf = getPromptCFrame(prompt)
+        if cf then
+            character:PivotTo(cf * KUKI_TELEPORT_OFFSET)
+            if KUKI_WAIT_ONE_FRAME then task.wait() end
+            if prompt.Parent then
+                pressPrompt(prompt)
+            end
+        end
+
+        kukiBusy = false
+    end
+
+    -- zweimal ausführen (zweites Mal wird übersprungen, wenn du schon sitzt)
+    runKuki = function()
+        runOnce()
+        task.wait(KUKI_SECOND_PRESS_DELAY)
+        runOnce()
+    end
+end
+
+-- BUTTON VISUAL HELPERS
+local function setGreenGradient(gradient)
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 145, 95)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 95, 75))
+    })
+end
+
+-- ANTI-CRASH BUTTON
+antiCrashButton.Activated:Connect(function()
+    antiCrashEnabled = not antiCrashEnabled
+    ANTI_CRASH_ENABLED = antiCrashEnabled
+
+    if antiCrashEnabled then
+        antiCrashButton.Text = "ANTI-CRASH: ON"
+        antiCrashButton.BackgroundColor3 =
+            Color3.fromRGB(35, 115, 90)
+
+        if not antiFallEnabled then
+            status.Text = "ANTI-CRASH ACTIVE"
+            status.TextColor3 = GREEN
+        end
+    else
+        antiCrashButton.Text = "ANTI-CRASH: OFF"
+        antiCrashButton.BackgroundColor3 =
+            Color3.fromRGB(35, 75, 105)
+
+        restoreStatus()
+    end
+end)
+
+-- ANTI-FALL BUTTON
+antiFallButton.Activated:Connect(function()
+    antiFallEnabled = not antiFallEnabled
+
+    if antiFallEnabled then
+        antiFallButton.Text = "ANTI-FALL: ON"
+        antiFallButton.BackgroundColor3 =
+            Color3.fromRGB(35, 115, 90)
+
+        setGreenGradient(antiFallGradient)
+
+        status.Text = "ANTI-FALL ACTIVE"
+        status.TextColor3 = GREEN
+    else
+        antiFallButton.Text = "ANTI-FALL: OFF"
+        antiFallButton.BackgroundColor3 =
+            Color3.fromRGB(75, 65, 35)
+
+        antiFallGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(
+                0, Color3.fromRGB(160, 115, 40)
+            ),
+            ColorSequenceKeypoint.new(
+                1, Color3.fromRGB(110, 65, 35)
+            )
+        })
+
+        restoreStatus()
+    end
+end)
+
+-- ANTI RAGDOLL BUTTON
+ragdollButton.Activated:Connect(function()
+    antiRagdollEnabled = not antiRagdollEnabled
+
+    if antiRagdollEnabled then
+        ragdollButton.Text = "ANTI RAGDOLL: ON"
+        ragdollButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
+        setGreenGradient(ragdollGradient)
+
+        startAntiRagdoll()
+
+        status.Text = "ANTI RAGDOLL ACTIVE"
+        status.TextColor3 = GREEN
+    else
+        ragdollButton.Text = "ANTI RAGDOLL: OFF"
+        ragdollButton.BackgroundColor3 = Color3.fromRGB(95, 45, 75)
+
+        ragdollGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 65, 140)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(110, 55, 170))
+        })
+
+        stopAntiRagdoll()
+        restoreStatus()
+    end
+end)
+
+-- POLICE MODE BUTTON
+policeButton.Activated:Connect(function()
+    policeModeEnabled = not policeModeEnabled
+
+    if policeModeEnabled then
+        policeButton.Text = "POLICE MODE: ON"
+        policeButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
+        setGreenGradient(policeGradient)
+
+        status.Text = "POLICE: HOLD W (200 / WALK 100)"
+        status.TextColor3 = GREEN
+    else
+        policeButton.Text = "POLICE MODE: OFF"
+        policeButton.BackgroundColor3 = Color3.fromRGB(30, 50, 115)
+
+        policeGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 80, 200)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 45, 80))
+        })
+
+        restoreStatus()
+    end
+end)
+
+-- ROBOT ESCAPE BUTTON
+robotButton.Activated:Connect(function()
+    robotEscapeEnabled = not robotEscapeEnabled
+
+    if robotEscapeEnabled then
+        robotButton.Text = "POLICE ESCAPE: ON"
+        robotButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
+        setGreenGradient(robotGradient)
+
+        status.Text = "POLICE ESCAPE ACTIVE"
+        status.TextColor3 = GREEN
+    else
+        robotButton.Text = "POLICE ESCAPE: OFF"
+        robotButton.BackgroundColor3 = Color3.fromRGB(95, 60, 30)
+
+        robotGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 110, 40)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 50, 70))
+        })
+
+        restoreStatus()
+    end
+end)
+
+-- SPEED HACK TOGGLE
+speedButton.Activated:Connect(function()
+    speedHackEnabled = not speedHackEnabled
+
+    if speedHackEnabled then
+        speedButton.Text = "SCOOTER HACK: ON"
+        speedButton.BackgroundColor3 =
+            Color3.fromRGB(35, 115, 90)
+
+        status.Text = "HOLD W TO ACCELERATE"
+        status.TextColor3 = GREEN
+    else
+        speedButton.Text = "SCOOTER HACK: OFF"
+        speedButton.BackgroundColor3 =
+            Color3.fromRGB(55, 45, 110)
+
+        restoreStatus()
+    end
+end)
+
+-- WALK HACK TOGGLE
+local walkHackWanted = false
+local wasInVehicle = false
+
+local function setWalkButtonVisual(enabled)
+    if enabled then
+        walkButton.Text = "WALK HACK: ON"
+        walkButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
+        setGreenGradient(walkGradient)
+    else
+        walkButton.Text = "WALK HACK: OFF"
+        walkButton.BackgroundColor3 = Color3.fromRGB(35, 75, 105)
+
+        walkGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 145, 180)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(55, 85, 200))
+        })
+    end
+end
+
+walkButton.Activated:Connect(function()
+    walkHackWanted = not walkHackWanted
+
+    local character = player.Character
+    local humanoid = character
+        and character:FindFirstChildOfClass("Humanoid")
+
+    local inVehicle = humanoid and humanoid.SeatPart ~= nil
+
+    walkHackEnabled = walkHackWanted and not inVehicle
+    wasInVehicle = inVehicle and walkHackWanted or false
+
+    setWalkButtonVisual(walkHackEnabled)
+end)
+
+-- GO TO KUKI BUTTON
+kukiButton.Activated:Connect(function()
+    if guiClosed then return end
+    task.spawn(runKuki)
+end)
+
+-- FARM MONEY TOGGLE
+button.Activated:Connect(function()
+    if guiClosed then return end
+
+    farming = not farming
+
+    if farming then
+        button.Text = "FARM MONEY: ON"
+        button.TextColor3 = Color3.fromRGB(255, 0, 0)
+
+        status.Text = "FARMING ACTIVE"
+        status.TextColor3 = GREEN
+
+        buttonGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(
+                0, Color3.fromRGB(235, 65, 125)
+            ),
+            ColorSequenceKeypoint.new(
+                1, Color3.fromRGB(155, 75, 255)
+            )
+        })
+
+        task.spawn(startFarm)
+    else
+        button.Text = "FARM MONEY: OFF"
+        button.TextColor3 = Color3.fromRGB(255, 0, 0)
+
+        restoreStatus()
+
+        buttonGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(
+                0, Color3.fromRGB(145, 95, 255)
+            ),
+            ColorSequenceKeypoint.new(
+                1, Color3.fromRGB(75, 145, 255)
+            )
+        })
+    end
+end)
+
+-- W KEY DETECTION
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+
+    if input.KeyCode == Enum.KeyCode.W then
+        wPressed = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.W then
+        wPressed = false
+    end
+end)
+
+UserInputService.WindowFocusReleased:Connect(function()
+    wPressed = false
+end)
+
+-- SPEED HACK (auch aktiv bei Police Mode, dann mit 250 km/h)
+-- Walk Hack hat Vorrang, damit beide Funktionen
+-- nicht gleichzeitig die Geschwindigkeit überschreiben.
+local speedConnection
+
+speedConnection = RunService.Heartbeat:Connect(function(dt)
+    if not gui.Parent
+        or not (speedHackEnabled or policeModeEnabled)
+        or walkHackEnabled
+        or farming then
+        return
+    end
+
+    if not wPressed then
+        return
+    end
+
+    local vehicle, seat, humanoid = getVehicle()
+
+    if not vehicle or not seat or not humanoid
+        or humanoid.Health <= 0
+        or not vehicle.PrimaryPart then
+        return
+    end
+
+    local root = vehicle.PrimaryPart
+
+    if root.Anchored then
+        return
+    end
+
+    local look = vehicle:GetPivot().LookVector
+    local forward = Vector3.new(look.X, 0, look.Z)
+
+    if forward.Magnitude < 0.001 then
+        return
+    end
+
+    forward = forward.Unit
+
+    local velocity = root.AssemblyLinearVelocity
+    local horizontalVelocity = Vector3.new(
+        velocity.X,
+        0,
+        velocity.Z
+    )
+
+    local forwardSpeed = horizontalVelocity:Dot(forward)
+    local sidewaysVelocity =
+        horizontalVelocity - forward * forwardSpeed
+
+    local targetKmh = policeModeEnabled
+        and POLICE_SPEED_KMH
+        or TARGET_SPEED_KMH
+
+    local maxSpeed = kmhToStudsPerSecond(targetKmh)
+    local acceleration = kmhToStudsPerSecond(
+        ACCELERATION_KMH_PER_SECOND
+    )
+
+    local newForwardSpeed = math.min(
+        forwardSpeed + acceleration * dt,
+        maxSpeed
+    )
+
+    local newHorizontalVelocity =
+        forward * newForwardSpeed + sidewaysVelocity
+
+    root.AssemblyLinearVelocity = Vector3.new(
+        newHorizontalVelocity.X,
+        velocity.Y,
+        newHorizontalVelocity.Z
+    )
+end)
+
+-- WALK HACK (auch aktiv bei Police Mode, dann mit 120)
+local walkConnection
+
+walkConnection = RunService.Heartbeat:Connect(function()
+    if not gui.Parent then
+        return
+    end
+
+    local character = player.Character
+    local humanoid = character
+        and character:FindFirstChildOfClass("Humanoid")
+    local root = character
+        and character:FindFirstChild("HumanoidRootPart")
+
+    if not humanoid or not root or humanoid.Health <= 0 then
+        return
+    end
+
+    -- Scooter/Auto erkennen: Walk Hack pausieren
+    if humanoid.SeatPart ~= nil then
+        if walkHackWanted then
+            wasInVehicle = true
+        end
+
+        walkHackEnabled = false
+        setWalkButtonVisual(false)
+        return
+    end
+
+    -- Nach dem Aussteigen vorherigen Zustand wiederherstellen
+    if wasInVehicle then
+        wasInVehicle = false
+
+        if walkHackWanted then
+            walkHackEnabled = true
+            setWalkButtonVisual(true)
+        end
+    end
+
+    if not (walkHackEnabled or policeModeEnabled) or root.Anchored then
+        return
+    end
+
+    local moveDirection = humanoid.MoveDirection
+
+    if moveDirection.Magnitude > 0 then
+        local velocity = root.AssemblyLinearVelocity
+        local walkSpeed = policeModeEnabled
+            and POLICE_WALK_SPEED
+            or WALK_SPEED
+
+        root.AssemblyLinearVelocity = Vector3.new(
+            moveDirection.X * walkSpeed,
+            velocity.Y,
+            moveDirection.Z * walkSpeed
+        )
+    end
+end)
+
+-- SPEED READOUT
+task.spawn(function()
+    while gui.Parent do
+        local vehicle = getVehicle()
+
+        if vehicle then
+            speedLabel.Text = string.format(
+                "SPEED: %d KM/H",
+                math.floor(getSpeedKmh(vehicle) + 0.5)
+            )
+        else
+            speedLabel.Text = "SPEED: 0 KM/H"
+        end
+
+        task.wait(3)
+    end
+end)
+
+-- MINIMIZE AND RESTORE
+local function setContentVisible(visible)
+    status.Visible = visible
+    button.Visible = visible
+    antiCrashButton.Visible = visible
+    antiFallButton.Visible = visible
+    speedButton.Visible = visible
+    walkButton.Visible = visible
+    ragdollButton.Visible = visible
+    policeButton.Visible = visible
+    robotButton.Visible = visible
+    kukiButton.Visible = visible
+    speedLabel.Visible = visible
+    footer.Visible = visible
+end
+
+minimize.Activated:Connect(function()
+    minimized = not minimized
+
+    if minimized then
+        minimize.Text = "+"
+
+        setContentVisible(false)
+
+        makeTween(main, 0.22, {
+            Size = UDim2.fromOffset(320, 45)
+        })
+    else
+        minimize.Text = "-"
+
+        makeTween(main, 0.22, {
+            Size = UDim2.fromOffset(320, FULL_HEIGHT)
+        })
+
+        task.delay(0.23, function()
+            if gui.Parent and not minimized then
+                setContentVisible(true)
+            end
+        end)
+    end
+end)
+
+-- CLOSE GUI
+close.Activated:Connect(function()
+    guiClosed = true
+    farming = false
+    antiCrashEnabled = false
+    ANTI_CRASH_ENABLED = false
+    antiFallEnabled = false
+    antiRagdollEnabled = false
+    policeModeEnabled = false
+    robotEscapeEnabled = false
+    speedHackEnabled = false
+    walkHackEnabled = false
+    wPressed = false
+
+    stopAntiRagdoll()
+
+    if speedConnection then
+        speedConnection:Disconnect()
+    end
+
+    if walkConnection then
+        walkConnection:Disconnect()
+    end
+
+    makeTween(main, 0.2, {
+        Size = UDim2.fromOffset(0, 0)
+    })
+
+    task.delay(0.22, function()
+        if gui.Parent then
+            gui:Destroy()
+        end
+    end)
+end)
+
+local function updateAntiCrashRobotPause()
+    if not ANTI_CRASH_ENABLED then return end
+
+    local character = player.Character
+    local charRoot = character and character:FindFirstChild("HumanoidRootPart")
+    local vehicle = getVehicle()
+    local subjectRoot = vehicle and vehicle.PrimaryPart or charRoot
+
+    if not subjectRoot then return end
+
+    local robot = findNearestRobot(subjectRoot.Position, ROBOT_PAUSE_DISTANCE)
+
+    if robot then
+        antiCrashPausedUntil = os.clock() + ROBOT_PAUSE_SECONDS
+    end
+end
+
+-- BACKGROUND CHECKS
+task.spawn(function()
+    while gui.Parent do
+        if not farming then
+            updateAntiCrashRobotPause()   -- NEU
+            runAntiCrash()
+            runAntiFall()
+        end
+
+        task.wait(0.03)
+    end
+end)
+
+-- ROBOT ESCAPE LOOP (jeden Frame)
+local robotEscapeConn
+
+robotEscapeConn = RunService.Heartbeat:Connect(function()
+    if not gui.Parent then
+        robotEscapeConn:Disconnect()
+        robotAddedConn:Disconnect()
+        return
+    end
+
+    local ok, err = pcall(runRobotEscape)
+
+    if not ok then
+        warn("[RobotEscape]", err)
+    end
+end)
+
+-- ANIMATED BORDER
+task.spawn(function()
+    while gui.Parent do
+        makeTween(mainStroke, 1.5, {
+            Color = BLUE,
+            Transparency = 0.4
+        })
+
+        task.wait(1.5)
+
+        if not gui.Parent then break end
+
+        makeTween(mainStroke, 1.5, {
+            Color = PURPLE,
+            Transparency = 0.1
+        })
+
+        task.wait(1.5)
+    end
+end)
+
+-- INTRO ANIMATION
+main.Size = UDim2.fromOffset(280, 240)
+
+makeTween(
+    main,
+    0.4,
+    {Size = UDim2.fromOffset(320, FULL_HEIGHT)},
+    Enum.EasingStyle.Back
+)
+-- ==========================================
+-- GALAXY FARM GUI - JUMPER ADDON
+-- Button ON/OFF + E zum Springen auf dem Scooter
+-- ==========================================
+
+local jumperEnabled = false
+local jumperPower = 125
+local jumperCooldown = false
+
+-- Vorhandene GUI-Elemente verwenden
+local jumperButton, jumperStroke, jumperGradient = createButton(
+    "JumperButton",
+    "JUMPER: OFF",
+    525,
+    Color3.fromRGB(55, 45, 110),
+    PURPLE,
+    {
+        Color3.fromRGB(145, 75, 255),
+        Color3.fromRGB(65, 100, 230)
+    }
+)
+
+-- Button aktivieren/deaktivieren
+jumperButton.Activated:Connect(function()
+    if guiClosed then
+        return
+    end
+
+    jumperEnabled = not jumperEnabled
+
+    if jumperEnabled then
+        jumperButton.Text = "JUMPER: ON"
+        jumperButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
+
+        setGreenGradient(jumperGradient)
+
+        status.Text = "JUMPER ACTIVE - PRESS E"
+        status.TextColor3 = GREEN
+    else
+        jumperButton.Text = "JUMPER: OFF"
+        jumperButton.BackgroundColor3 = Color3.fromRGB(55, 45, 110)
+
+        jumperGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(
+                0,
+                Color3.fromRGB(145, 75, 255)
+            ),
+            ColorSequenceKeypoint.new(
+                1,
+                Color3.fromRGB(65, 100, 230)
+            )
+        })
+
+        restoreStatus()
+    end
+end)
+
+-- E drücken, um den Scooter springen zu lassen
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed or not gui.Parent or guiClosed then
+        return
+    end
+
+    if input.KeyCode ~= Enum.KeyCode.E then
+        return
+    end
+
+    if not jumperEnabled or jumperCooldown then
+        return
+    end
+
+    -- Prüfen, ob der Spieler auf einem Fahrzeug sitzt
+    local vehicle, seat, humanoid = getVehicle()
+
+    if not vehicle or not seat or not humanoid then
+        return
+    end
+
+    local root = vehicle.PrimaryPart
+
+    if not root or root.Anchored then
+        return
+    end
+
+    jumperCooldown = true
+
+    -- Vorhandene horizontale Geschwindigkeit beibehalten
+    local velocity = root.AssemblyLinearVelocity
+
+    root.AssemblyLinearVelocity = Vector3.new(
+        velocity.X,
+        jumperPower,
+        velocity.Z
+    )
+
+    task.delay(0.6, function()
+        jumperCooldown = false
+    end)
+end)
+
+-- Jumper beim Minimieren ausblenden
+local oldSetContentVisible = setContentVisible
+
+-- Ursprüngliche Funktion um den Jumper ergänzen
+setContentVisible = function(visible)
+    oldSetContentVisible(visible)
+    jumperButton.Visible = visible
+end
+
+-- Fensterhöhe erweitern, damit der Button Platz hat
+FULL_HEIGHT = 660
+main.Size = UDim2.fromOffset(320, 660)
+
+-- Geschwindigkeitsanzeige nach unten verschieben
+speedLabel.Position = UDim2.fromOffset(14, 575)
+
+-- Beim Schließen Jumper deaktivieren
+close.Activated:Connect(function()
+    jumperEnabled = false
+end)
+
+-- ==========================================
+-- GALAXY FARM GUI - STRONG DYNAMIC SOFT FALL
+-- FRÜHE BREMSUNG + BERGE + SCHRÄGE FLÄCHEN
+-- ==========================================
+
+local softFallEnabled = false
+local softFallBusy = false
+local softFallCooldown = false
+
+-- ==========================================
+-- EINSTELLUNGEN
+-- ==========================================
+
+local SOFT_FALL_MIN_KMH = 20
+
+-- Bodenerkennung
+local SOFT_FALL_DETECTION_DISTANCE = 300
+local SOFT_FALL_RAY_OFFSET = 3
+
+-- Dynamischer Bremsweg
+local SOFT_FALL_MIN_BRAKE_DISTANCE = 30
+local SOFT_FALL_MAX_BRAKE_DISTANCE = 200
+local SOFT_FALL_SPEED_DISTANCE_FACTOR = 2.5
+
+-- Bremsverhalten
+local SOFT_FALL_TARGET_SPEED = -2
+local SOFT_FALL_MAX_DECELERATION = 100
+local SOFT_FALL_SMOOTHING = 5
+
+-- Sicherheitsabstand zum Boden
+local SOFT_FALL_GROUND_MARGIN = 4
+
+-- ==========================================
+-- BUTTON
+-- ==========================================
+
+local softFallButton, softFallStroke, softFallGradient = createButton(
+    "SoftFallButton",
+    "SOFT FALL: OFF",
+    575,
+    Color3.fromRGB(55, 45, 110),
+    PURPLE,
+    {
+        Color3.fromRGB(145, 75, 255),
+        Color3.fromRGB(65, 100, 230)
+    }
+)
+
+softFallButton.Activated:Connect(function()
+    if guiClosed then
+        return
+    end
+
+    softFallEnabled = not softFallEnabled
+
+    if softFallEnabled then
+        softFallButton.Text = "SOFT FALL: ON"
+        softFallButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
+
+        setGreenGradient(softFallGradient)
+
+        status.Text = "SOFT FALL ACTIVE"
+        status.TextColor3 = GREEN
+    else
+        softFallButton.Text = "SOFT FALL: OFF"
+        softFallButton.BackgroundColor3 = Color3.fromRGB(55, 45, 110)
+
+        softFallGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(
+                0,
+                Color3.fromRGB(145, 75, 255)
+            ),
+            ColorSequenceKeypoint.new(
+                1,
+                Color3.fromRGB(65, 100, 230)
+            )
+        })
+
+        restoreStatus()
+    end
+end)
+
+-- ==========================================
+-- BODEN ERKENNEN
+-- BERGE UND SCHRÄGE FLÄCHEN
+-- ==========================================
+
+local function softFallGetGroundDistance(vehicle)
+    if not vehicle or not vehicle.PrimaryPart then
+        return nil
+    end
+
+    local root = vehicle.PrimaryPart
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = {
+        vehicle,
+        player.Character
+    }
+    params.IgnoreWater = true
+
+    local offsets = {
+        Vector3.new(0, 0, 0),
+        Vector3.new(SOFT_FALL_RAY_OFFSET, 0, 0),
+        Vector3.new(-SOFT_FALL_RAY_OFFSET, 0, 0),
+        Vector3.new(0, 0, SOFT_FALL_RAY_OFFSET),
+        Vector3.new(0, 0, -SOFT_FALL_RAY_OFFSET),
+        Vector3.new(SOFT_FALL_RAY_OFFSET, 0, SOFT_FALL_RAY_OFFSET),
+        Vector3.new(-SOFT_FALL_RAY_OFFSET, 0, -SOFT_FALL_RAY_OFFSET)
+    }
+
+    local closestDistance = math.huge
+    local closestResult = nil
+
+    for _, offset in ipairs(offsets) do
+        local origin = root.Position
+            + root.CFrame:VectorToWorldSpace(offset)
+
+        local result = workspace:Raycast(
+            origin,
+            Vector3.new(0, -SOFT_FALL_DETECTION_DISTANCE, 0),
+            params
+        )
+
+        if result then
+            local distance = origin.Y - result.Position.Y
+
+            if distance >= 0 and distance < closestDistance then
+                closestDistance = distance
+                closestResult = result
+            end
+        end
+    end
+
+    if not closestResult then
+        return nil
+    end
+
+    return closestDistance, closestResult
+end
+
+-- ==========================================
+-- STARKE, GLEICHMÄSSIGE BREMSUNG
+-- ==========================================
+
+local function softFallStop(vehicle, humanoid, groundResult)
+    if softFallBusy
+        or not vehicle
+        or not vehicle.PrimaryPart
+        or not groundResult then
+        return
+    end
+
+    softFallBusy = true
+
+    local success, err = pcall(function()
+        local root = vehicle.PrimaryPart
+
+        if not root or root.Anchored then
+            return
+        end
+
+        while softFallEnabled
+            and vehicle.Parent
+            and root.Parent do
+
+            local deltaTime = RunService.Heartbeat:Wait()
+
+            if not softFallEnabled or not root.Parent then
+                break
+            end
+
+            local velocity = root.AssemblyLinearVelocity
+            local fallSpeed = math.max(0, -velocity.Y)
+
+            -- Nicht weiter bremsen, wenn die Zielgeschwindigkeit erreicht ist
+            if velocity.Y >= SOFT_FALL_TARGET_SPEED then
+                break
+            end
+
+            -- Bodenabstand kontinuierlich neu messen
+            local distance = softFallGetGroundDistance(vehicle)
+
+            if not distance then
+                break
+            end
+
+            -- Dynamischer Bremsweg abhängig von der Fallgeschwindigkeit
+            local dynamicBrakeDistance =
+                SOFT_FALL_MIN_BRAKE_DISTANCE
+                + fallSpeed * SOFT_FALL_SPEED_DISTANCE_FACTOR
+
+            dynamicBrakeDistance = math.clamp(
+                dynamicBrakeDistance,
+                SOFT_FALL_MIN_BRAKE_DISTANCE,
+                SOFT_FALL_MAX_BRAKE_DISTANCE
+            )
+
+            -- Verbleibender sicherer Bremsweg
+            local safeDistance = math.max(
+                distance - SOFT_FALL_GROUND_MARGIN,
+                1
+            )
+
+            -- Physikalisch erforderliche Verzögerung berechnen
+            local requiredDeceleration =
+                (
+                    velocity.Y * velocity.Y
+                    - SOFT_FALL_TARGET_SPEED
+                    * SOFT_FALL_TARGET_SPEED
+                ) / (2 * safeDistance)
+
+            -- Stärkere Reaktion auf die erforderliche Verzögerung
+            local deceleration = math.clamp(
+                requiredDeceleration * 2,
+                25,
+                SOFT_FALL_MAX_DECELERATION
+            )
+
+            -- Zusätzliche Bremskraft bei Annäherung an den Boden
+            if distance <= dynamicBrakeDistance then
+                local proximity = math.clamp(
+                    1 - distance / dynamicBrakeDistance,
+                    0,
+                    1
+                )
+
+                deceleration = math.min(
+                    SOFT_FALL_MAX_DECELERATION,
+                    deceleration * (1 + proximity)
+                )
+            end
+
+            -- Vertikale Geschwindigkeit schrittweise reduzieren
+            local newY = math.min(
+                SOFT_FALL_TARGET_SPEED,
+                velocity.Y + deceleration * deltaTime
+            )
+
+            -- Horizontale Bewegung beibehalten
+            root.AssemblyLinearVelocity = Vector3.new(
+                velocity.X,
+                newY,
+                velocity.Z
+            )
+
+            -- Rotation kontrolliert dämpfen
+            root.AssemblyAngularVelocity =
+                root.AssemblyAngularVelocity:Lerp(
+                    Vector3.zero,
+                    math.clamp(
+                        SOFT_FALL_SMOOTHING * deltaTime,
+                        0,
+                        1
+                    )
+                )
+
+            if newY >= SOFT_FALL_TARGET_SPEED then
+                break
+            end
+        end
+    end)
+
+    if not success then
+        warn("[SoftFall] Fehler:", err)
+    end
+
+    softFallBusy = false
+end
+
+-- ==========================================
+-- STURZÜBERWACHUNG
+-- ==========================================
+
+task.spawn(function()
+    while gui.Parent and not guiClosed do
+        RunService.Heartbeat:Wait()
+
+        if not softFallEnabled
+            or softFallBusy
+            or softFallCooldown
+            or farming then
+            continue
+        end
+
+        local vehicle, seat, humanoid = getVehicle()
+
+        if not vehicle or not seat or not humanoid then
+            continue
+        end
+
+        local root = vehicle.PrimaryPart
+
+        if not root or root.Anchored then
+            continue
+        end
+
+        local velocity = root.AssemblyLinearVelocity
+
+        local speedKmh = velocity.Magnitude
+            * STUDS_TO_METERS
+            * 3.6
+
+        -- Nur bei ausreichender Geschwindigkeit und Fallbewegung
+        if velocity.Y >= -2
+            or speedKmh < SOFT_FALL_MIN_KMH then
+            continue
+        end
+
+        local distance, groundResult =
+            softFallGetGroundDistance(vehicle)
+
+        if not distance or not groundResult then
+            continue
+        end
+
+        local fallSpeed = math.max(0, -velocity.Y)
+
+        -- Je schneller der Fall, desto früher bremsen
+        local dynamicBrakeDistance =
+            SOFT_FALL_MIN_BRAKE_DISTANCE
+            + fallSpeed * SOFT_FALL_SPEED_DISTANCE_FACTOR
+
+        dynamicBrakeDistance = math.clamp(
+            dynamicBrakeDistance,
+            SOFT_FALL_MIN_BRAKE_DISTANCE,
+            SOFT_FALL_MAX_BRAKE_DISTANCE
+        )
+
+        -- Bremsung rechtzeitig aktivieren
+        if distance <= dynamicBrakeDistance
+            and distance > SOFT_FALL_GROUND_MARGIN then
+
+            softFallCooldown = true
+
+            task.spawn(function()
+                softFallStop(
+                    vehicle,
+                    humanoid,
+                    groundResult
+                )
+
+                task.wait(0.25)
+
+                softFallCooldown = false
+            end)
+        end
+    end
+end)
+
+-- ==========================================
+-- BUTTON BEIM MINIMIEREN AUSBLENDEN
+-- ==========================================
+
+local previousSetContentVisible = setContentVisible
+
+setContentVisible = function(visible)
+    previousSetContentVisible(visible)
+
+    if softFallButton then
+        softFallButton.Visible = visible
+    end
+end
+
+-- ==========================================
+-- GUI-GRÖSSE
+-- ==========================================
+
+FULL_HEIGHT = 660
+
+main.Size = UDim2.fromOffset(320, FULL_HEIGHT)
+speedLabel.Position = UDim2.fromOffset(14, 615)
+
+-- ==========================================
+-- BEIM SCHLIESSEN DEAKTIVIEREN
+-- ==========================================
+
+close.Activated:Connect(function()
+    softFallEnabled = false
+    softFallBusy = false
+    softFallCooldown = false
+end)
+
+print("[SOFT FALL] Soft-Fall-System geladen!")
+print("[JUMPER] Jumper-Addon geladen!")
+print("[JUMPER] Drücke (e) um zu springen")
+print("[DEBUG] kukirin life script geladen für:", player.Name)
+
+
+end
+
+--// Ladebalken
+local startTime = os.clock()
+
+while true do
+    local elapsed = os.clock() - startTime
+    local progress = math.clamp(elapsed / LOADING_TIME, 0, 1)
+
+    bar.Size = UDim2.fromScale(progress, 1)
+    percentage.Text = math.floor(progress * 100) .. "%"
+
+    if progress < 1 then
+        status.Text = "Script wird vorbereitet!"
+    else
+        break
+    end
+
+    RunService.Heartbeat:Wait()
+end
+
+status.Text = "Skripte werden gestartet..."
+
+-- Eigenen Code geschützt ausführen
+local success, err = xpcall(runCustomCode, debug.traceback)
+
+if not success then
+    warn("Fehler in deinem eigenen Code:\n" .. tostring(err))
+end
+
+--// Kurze Abschlussanimation
+status.Text = "Fertig!"
+
+task.wait(0.5)
+
+TweenService:Create(
+    blur,
+    TweenInfo.new(0.5),
+    {Size = 0}
+):Play()
+
+TweenService:Create(
+    background,
+    TweenInfo.new(0.5),
+    {BackgroundTransparency = 1}
+):Play()
+
+TweenService:Create(
+    title,
+    TweenInfo.new(0.3),
+    {TextTransparency = 1}
+):Play()
+
+TweenService:Create(
+    status,
+    TweenInfo.new(0.3),
+    {TextTransparency = 1}
+):Play()
+
+TweenService:Create(
+    percentage,
+    TweenInfo.new(0.3),
+    {TextTransparency = 1}
+):Play()
+
+task.wait(0.6)
+
+gui:Destroy()
+blur:Destroy()
