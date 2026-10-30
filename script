@@ -1539,6 +1539,8 @@ local KUKI_VEHICLE_NAMES = {
     ["g4"] = true,
     ["g4 ultra"] = true,
     ["g5"] = true,
+    ["g4 max"] = true,
+    ["g4 pro"] = true,
 }
 
 local runKuki
