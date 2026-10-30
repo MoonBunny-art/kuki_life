@@ -1764,7 +1764,7 @@ policeButton.Activated:Connect(function()
         policeButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
         setGreenGradient(policeGradient)
 
-        status.Text = "POLICE: HOLD W (200 / WALK 100)"
+        status.Text = "POLICE: HOLD W (200 / WALK 99)"
         status.TextColor3 = GREEN
     else
         policeButton.Text = "POLICE MODE: OFF"
