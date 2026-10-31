@@ -1,4 +1,3 @@
-
 --// Loading Screen + Blur + schrittweises Laden
 --// Ort: StarterPlayer > StarterPlayerScripts > LocalScript
 
@@ -94,16 +93,12 @@ percentage.Font = Enum.Font.GothamBold
 percentage.Parent = background
 
 --// DEIN EIGENER LOCALSCRIPT-CODE
--- Füge deinen Code in die Funktion unten ein.
--- Wichtig: Hier keinen zweiten LocalScript-Text als String einfügen.
--- Code direkt in diese Funktion schreiben.
-
 local function runCustomCode()
--- GALAXY FARM GUI + GO TO KUKI
--- Speed Hack: Beschleunigung bei gedrücktem W
--- Walk Hack: Horizontale Geschwindigkeit = 40
+-- KUKIRIN GUI + GO TO KUKI
+-- Scooter Hack: misst EINMAL die Top-Speed des Scooters und fährt dann
+--               Top-Speed + 25 km/h (z.B. 20 -> 45)
+-- Walk Hack: Horizontale Geschwindigkeit = 60
 -- Anti Ragdoll: verhindert Ragdoll / Hinfallen
--- Police Mode: Scooter 250 km/h, Walk Speed 120
 -- Anti-Crash: schützt in die tatsächliche Bewegungsrichtung
 -- Go To Kuki: teleportiert zum eigenen Fahrzeug und drückt "Enter"
 local sound = Instance.new("Sound")
@@ -120,28 +115,19 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-local farming = false
 local minimized = false
 local guiClosed = false
 local antiCrashEnabled = false
 local ANTI_CRASH_ENABLED = false
 local antiFallEnabled = false
 local antiRagdollEnabled = false
-local policeModeEnabled = false
 local robotEscapeEnabled = false
 local speedHackEnabled = false
 local walkHackEnabled = false
 local wPressed = false
 
 -- GUI SIZE
-local FULL_HEIGHT = 660
-
--- FARM SETTINGS
-local HEIGHT = 10
-local SPIN_SPEED = math.rad(2500)
-local BOUNCE_SPEED = 40
-local RISE_SPEED = 20
-local GROUND_PAUSE = 0.3
+local FULL_HEIGHT = 600
 
 -- ANTI-FALL SETTINGS
 local MAX_BACKWARD_TILT = 0.3
@@ -149,14 +135,13 @@ local ANTI_FALL_SMOOTHNESS = 0.09675
 local ANTI_FALL_ANGULAR_DAMPING = 0.85
 
 -- SPEED SETTINGS
-local TARGET_SPEED_KMH = 120
 local STUDS_TO_METERS = 0.28
 local ACCELERATION_KMH_PER_SECOND = 75
 local WALK_SPEED = 60
 
--- POLICE MODE SETTINGS
-local POLICE_SPEED_KMH = 200
-local POLICE_WALK_SPEED = 100
+-- SCOOTER HACK: Top-Speed einmal messen, dann + SPEED_BONUS_KMH
+local SPEED_BONUS_KMH = 25
+local MEASURE_STABLE_TIME = 1.0   -- so lange darf die Speed nicht mehr steigen -> Top-Speed erkannt
 
 local function kmhToStudsPerSecond(kmh)
     return (kmh / 3.6) / STUDS_TO_METERS
@@ -311,7 +296,7 @@ title.Name = "Title"
 title.Size = UDim2.new(1, -105, 1, 0)
 title.Position = UDim2.fromOffset(13, 0)
 title.BackgroundTransparency = 1
-title.Text = "KUKIRIN FARM"
+title.Text = "KUKIRIN LIFE"
 title.TextColor3 = WHITE
 title.TextSize = 17
 title.Font = Enum.Font.GothamBold
@@ -406,29 +391,12 @@ local function createButton(
     return b, stroke, gradient
 end
 
--- FARM MONEY BUTTON
-local button, buttonStroke, buttonGradient = createButton(
-    "farm_money",
-    "FARM MONEY: OFF",
-    84,
-    PURPLE,
-    Color3.fromRGB(220, 200, 255),
-    {
-        Color3.fromRGB(145, 95, 255),
-        Color3.fromRGB(75, 145, 255)
-    }
-)
-
-button.TextColor3 = Color3.fromRGB(255, 0, 0)
-button.TextStrokeTransparency = 0.8
-button.TextStrokeColor3 = Color3.fromRGB(30, 15, 65)
-
 -- ANTI-CRASH BUTTON
 local antiCrashButton, antiCrashStroke, antiCrashGradient =
     createButton(
         "AntiCrashButton",
         "ANTI-CRASH: OFF",
-        133,
+        84,
         Color3.fromRGB(35, 75, 105),
         BLUE,
         {
@@ -442,7 +410,7 @@ local antiFallButton, antiFallStroke, antiFallGradient =
     createButton(
         "AntiFallButton",
         "ANTI-FALL: OFF",
-        182,
+        133,
         Color3.fromRGB(75, 65, 35),
         Color3.fromRGB(255, 190, 80),
         {
@@ -455,7 +423,7 @@ local antiFallButton, antiFallStroke, antiFallGradient =
 local speedButton, speedStroke, speedGradient = createButton(
     "SpeedHackButton",
     "SCOOTER HACK: OFF",
-    231,
+    182,
     Color3.fromRGB(55, 45, 110),
     PURPLE,
     {
@@ -468,7 +436,7 @@ local speedButton, speedStroke, speedGradient = createButton(
 local walkButton, walkStroke, walkGradient = createButton(
     "WalkHackButton",
     "WALK HACK: OFF",
-    280,
+    231,
     Color3.fromRGB(35, 75, 105),
     BLUE,
     {
@@ -481,7 +449,7 @@ local walkButton, walkStroke, walkGradient = createButton(
 local ragdollButton, ragdollStroke, ragdollGradient = createButton(
     "AntiRagdollButton",
     "ANTI RAGDOLL: OFF",
-    329,
+    280,
     Color3.fromRGB(95, 45, 75),
     PINK,
     {
@@ -490,24 +458,11 @@ local ragdollButton, ragdollStroke, ragdollGradient = createButton(
     }
 )
 
--- POLICE MODE BUTTON
-local policeButton, policeStroke, policeGradient = createButton(
-    "PoliceModeButton",
-    "POLICE MODE: OFF",
-    378,
-    Color3.fromRGB(30, 50, 115),
-    Color3.fromRGB(120, 170, 255),
-    {
-        Color3.fromRGB(40, 80, 200),
-        Color3.fromRGB(150, 45, 80)
-    }
-)
-
 -- ROBOT ESCAPE BUTTON
 local robotButton, robotStroke, robotGradient = createButton(
     "RobotEscapeButton",
     "POLICE ESCAPE: OFF",
-    427,
+    329,
     Color3.fromRGB(95, 60, 30),
     Color3.fromRGB(255, 160, 70),
     {
@@ -520,7 +475,7 @@ local robotButton, robotStroke, robotGradient = createButton(
 local kukiButton, kukiStroke, kukiGradient = createButton(
     "GoToKukiButton",
     "GO TO KUKI",
-    476,
+    378,
     Color3.fromRGB(35, 115, 90),
     GREEN,
     {
@@ -625,128 +580,8 @@ local function getSpeedKmh(vehicle)
 end
 
 local function restoreStatus()
-    if policeModeEnabled then
-        status.Text = "POLICE MODE ACTIVE"
-    elseif farming then
-        status.Text = "FARMING ACTIVE"
-    else
-        status.Text = "SYSTEM READY"
-    end
+    status.Text = "SYSTEM READY"
     status.TextColor3 = GREEN
-end
-
--- FARM LOGIC
-local function startFarm()
-    while farming and gui.Parent do
-        local vehicle, seat, humanoid = getVehicle()
-
-        if not vehicle then
-            status.Text = "SIT IN YOUR SCOOTER"
-            status.TextColor3 = RED
-            task.wait(0.5)
-
-            if farming and gui.Parent then
-                status.Text = "FARMING ACTIVE"
-                status.TextColor3 = GREEN
-            end
-
-            continue
-        end
-
-        local startPos = vehicle:GetPivot().Position
-
-        local params = RaycastParams.new()
-        params.FilterType = Enum.RaycastFilterType.Exclude
-        params.FilterDescendantsInstances = {vehicle}
-
-        local result = workspace:Raycast(
-            startPos + Vector3.new(0, 3, 0),
-            Vector3.new(0, -500, 0),
-            params
-        )
-
-        if not result then
-            task.wait(0.2)
-            continue
-        end
-
-        local pivotOffset = startPos.Y - result.Position.Y
-        local groundPivotY = result.Position.Y + pivotOffset
-
-        local y = groundPivotY
-        local velocity = RISE_SPEED
-        local angle = 0
-        local onGround = false
-        local root = vehicle.PrimaryPart
-
-        while farming and gui.Parent
-            and vehicle.Parent and root.Parent
-            and humanoid.Health > 0
-            and humanoid.SeatPart == seat do
-
-            local dt = math.min(
-                RunService.Heartbeat:Wait(),
-                1 / 30
-            )
-
-            if onGround then
-                y = groundPivotY
-                velocity = 0
-
-                vehicle:PivotTo(
-                    CFrame.new(
-                        startPos.X,
-                        groundPivotY,
-                        startPos.Z
-                    ) * CFrame.Angles(0, angle, 0)
-                )
-
-                root.AssemblyLinearVelocity = Vector3.zero
-                task.wait(GROUND_PAUSE)
-
-                if not farming or not vehicle.Parent then
-                    break
-                end
-
-                velocity = BOUNCE_SPEED
-                onGround = false
-            else
-                velocity -= workspace.Gravity * dt
-                y += velocity * dt
-
-                if y >= groundPivotY + HEIGHT then
-                    y = groundPivotY + HEIGHT
-                    velocity = 0
-                end
-
-                if y <= groundPivotY and velocity < 0 then
-                    y = groundPivotY
-                    velocity = 0
-                    onGround = true
-                end
-            end
-
-            angle += SPIN_SPEED * dt
-
-            vehicle:PivotTo(
-                CFrame.new(
-                    startPos.X,
-                    y,
-                    startPos.Z
-                ) * CFrame.Angles(0, angle, 0)
-            )
-
-            if root and not root.Anchored and not onGround then
-                root.AssemblyLinearVelocity = Vector3.new(
-                    root.AssemblyLinearVelocity.X,
-                    velocity,
-                    root.AssemblyLinearVelocity.Z
-                )
-            end
-        end
-
-        task.wait(0.1)
-    end
 end
 
 -- ANTI-CRASH SETTINGS
@@ -797,11 +632,11 @@ local function getMovementDirection(vehicle, seat, root, humanoid)
 
     return nil, 0
 end
+
 local function runAntiCrash()
     if antiCrashBusy
         or not ANTI_CRASH_ENABLED
-        or os.clock() < antiCrashPausedUntil   -- NEU
-        or farming
+        or os.clock() < antiCrashPausedUntil
         or not gui.Parent then
         return
     end
@@ -903,7 +738,6 @@ local antiFallBusy = false
 local function runAntiFall()
     if not antiFallEnabled
         or antiFallBusy
-        or farming
         or not gui.Parent then
         return
     end
@@ -960,11 +794,6 @@ local function runAntiFall()
 end
 
 -- ANTI RAGDOLL
--- Beim Start werden alle Gelenke (Motor6D) des Körpers gesichert.
--- Zerstört oder deaktiviert das Spiel ein Gelenk, wird es sofort neu
--- erstellt / aktiviert. Ragdoll-Constraints (BallSocket) werden NUR
--- abgeschaltet, wenn alle Gelenke intakt sind -> keine auseinander-
--- fliegenden Körperteile mehr.
 local RAGDOLL_STATES = {
     Enum.HumanoidStateType.Ragdoll,
     Enum.HumanoidStateType.FallingDown,
@@ -1254,9 +1083,6 @@ local function stopAntiRagdoll()
 end
 
 -- ROBOT ESCAPE
--- Kommt ein Roboter/Dummy (Humanoid, der KEIN Spieler ist) auf
--- ESCAPE_TRIGGER_DISTANCE heran, wirst du ESCAPE_DISTANCE von ihm weg
--- auf eine freie, ebene Fläche teleportiert.
 local ESCAPE_TRIGGER_DISTANCE = 10
 local ESCAPE_DISTANCE = 20
 local ESCAPE_COOLDOWN = 0.35
@@ -1293,9 +1119,6 @@ local function makeOverlapParams(ignore)
     return params
 end
 
--- Schnelle Roboter-Erkennung: Cache aller Humanoid-Modelle statt
--- Overlap-Abfrage. Zusätzlich wird die Bewegung des Roboters
--- vorausberechnet, damit auch schnelle Roboter früh erkannt werden.
 local ESCAPE_LOOKAHEAD = 0.12
 local robotCache = {}
 
@@ -1396,8 +1219,7 @@ local function findFreeSpot(robotPos, away, size, refY, ignore)
                 if not blocked
                     and not findNearestRobot(
                         spot + Vector3.new(0, 3, 0),
-                        ESCAPE_TRIGGER_DISTANCE,
-                        ignore
+                        ESCAPE_TRIGGER_DISTANCE
                     ) then
                     return spot
                 end
@@ -1409,7 +1231,7 @@ local function findFreeSpot(robotPos, away, size, refY, ignore)
 end
 
 local function runRobotEscape()
-    if not robotEscapeEnabled or farming or not gui.Parent then
+    if not robotEscapeEnabled or not gui.Parent then
         return
     end
 
@@ -1440,8 +1262,7 @@ local function runRobotEscape()
 
     local robot, robotRoot = findNearestRobot(
         origin,
-        ESCAPE_TRIGGER_DISTANCE,
-        ignore
+        ESCAPE_TRIGGER_DISTANCE
     )
 
     if not robot then return end
@@ -1499,6 +1320,8 @@ local function runRobotEscape()
         ignore
     )
 
+    if not spot then return end
+
     local newCFrame = CFrame.new(spot + Vector3.new(0, offsetY + 0.3, 0))
         * pivot.Rotation
 
@@ -1525,8 +1348,8 @@ end
 local KUKI_PROMPT_ACTION = "Enter"
 local KUKI_PROMPT_KEY = Enum.KeyCode.E
 local KUKI_TELEPORT_OFFSET = CFrame.new(0, 3, 0)
-local KUKI_USE_NAME_FILTER = true   -- true = nur Fahrzeuge aus der Liste unten
-local KUKI_WAIT_ONE_FRAME = false   -- auf true setzen, falls der Server den Prompt sonst ignoriert
+local KUKI_USE_NAME_FILTER = true
+local KUKI_WAIT_ONE_FRAME = false
 local KUKI_SECOND_PRESS_DELAY = 0.15
 
 local KUKI_VEHICLE_NAMES = {
@@ -1757,30 +1580,6 @@ ragdollButton.Activated:Connect(function()
     end
 end)
 
--- POLICE MODE BUTTON
-policeButton.Activated:Connect(function()
-    policeModeEnabled = not policeModeEnabled
-
-    if policeModeEnabled then
-        policeButton.Text = "POLICE MODE: ON"
-        policeButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
-        setGreenGradient(policeGradient)
-
-        status.Text = "POLICE: HOLD W (200 / WALK 100)"
-        status.TextColor3 = GREEN
-    else
-        policeButton.Text = "POLICE MODE: OFF"
-        policeButton.BackgroundColor3 = Color3.fromRGB(30, 50, 115)
-
-        policeGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 80, 200)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 45, 80))
-        })
-
-        restoreStatus()
-    end
-end)
-
 -- ROBOT ESCAPE BUTTON
 robotButton.Activated:Connect(function()
     robotEscapeEnabled = not robotEscapeEnabled
@@ -1805,16 +1604,32 @@ robotButton.Activated:Connect(function()
     end
 end)
 
+-- SCOOTER HACK: TOP-SPEED EINMAL MESSEN, DANN + SPEED_BONUS_KMH
+local speedBaselineKmh = nil       -- gemessene Top-Speed (nil = noch nicht gemessen)
+local speedBaselineVehicle = nil   -- für welches Fahrzeug gemessen wurde
+local speedPeakKmh = 0
+local speedLastIncrease = 0
+local speedMeasureShown = false
+
+local function resetSpeedMeasure()
+    speedBaselineKmh = nil
+    speedBaselineVehicle = nil
+    speedPeakKmh = 0
+    speedLastIncrease = os.clock()
+    speedMeasureShown = false
+end
+
 -- SPEED HACK TOGGLE
 speedButton.Activated:Connect(function()
     speedHackEnabled = not speedHackEnabled
+    resetSpeedMeasure()
 
     if speedHackEnabled then
         speedButton.Text = "SCOOTER HACK: ON"
         speedButton.BackgroundColor3 =
             Color3.fromRGB(35, 115, 90)
 
-        status.Text = "HOLD W TO ACCELERATE"
+        status.Text = "HOLD W: MESSE TOP SPEED"
         status.TextColor3 = GREEN
     else
         speedButton.Text = "SCOOTER HACK: OFF"
@@ -1866,46 +1681,6 @@ kukiButton.Activated:Connect(function()
     task.spawn(runKuki)
 end)
 
--- FARM MONEY TOGGLE
-button.Activated:Connect(function()
-    if guiClosed then return end
-
-    farming = not farming
-
-    if farming then
-        button.Text = "FARM MONEY: ON"
-        button.TextColor3 = Color3.fromRGB(255, 0, 0)
-
-        status.Text = "FARMING ACTIVE"
-        status.TextColor3 = GREEN
-
-        buttonGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(
-                0, Color3.fromRGB(235, 65, 125)
-            ),
-            ColorSequenceKeypoint.new(
-                1, Color3.fromRGB(155, 75, 255)
-            )
-        })
-
-        task.spawn(startFarm)
-    else
-        button.Text = "FARM MONEY: OFF"
-        button.TextColor3 = Color3.fromRGB(255, 0, 0)
-
-        restoreStatus()
-
-        buttonGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(
-                0, Color3.fromRGB(145, 95, 255)
-            ),
-            ColorSequenceKeypoint.new(
-                1, Color3.fromRGB(75, 145, 255)
-            )
-        })
-    end
-end)
-
 -- W KEY DETECTION
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
@@ -1925,20 +1700,29 @@ UserInputService.WindowFocusReleased:Connect(function()
     wPressed = false
 end)
 
--- SPEED HACK (auch aktiv bei Police Mode, dann mit 250 km/h)
--- Walk Hack hat Vorrang, damit beide Funktionen
--- nicht gleichzeitig die Geschwindigkeit überschreiben.
+-- SPEED HACK
+-- 1) Beim ersten Gasgeben wird die normale Top-Speed des Scooters gemessen
+--    (keine Beschleunigung durch den Hack).
+-- 2) Sobald die Speed MEASURE_STABLE_TIME Sekunden nicht mehr steigt,
+--    wird sie als Top-Speed gespeichert.
+-- 3) Danach fährt der Scooter Top-Speed + SPEED_BONUS_KMH
+--    (z.B. 20 -> 45 km/h).
+-- Walk Hack hat Vorrang, damit beide nicht gleichzeitig überschreiben.
 local speedConnection
 
 speedConnection = RunService.Heartbeat:Connect(function(dt)
     if not gui.Parent
-        or not (speedHackEnabled or policeModeEnabled)
-        or walkHackEnabled
-        or farming then
+        or not speedHackEnabled
+        or walkHackEnabled then
         return
     end
 
     if not wPressed then
+        -- Messung abbrechen, wenn W losgelassen wird, bevor sie fertig ist
+        if not speedBaselineKmh then
+            speedPeakKmh = 0
+            speedLastIncrease = os.clock()
+        end
         return
     end
 
@@ -1956,6 +1740,51 @@ speedConnection = RunService.Heartbeat:Connect(function(dt)
         return
     end
 
+    -- Anderes Fahrzeug -> neu messen
+    if speedBaselineVehicle ~= vehicle then
+        resetSpeedMeasure()
+        speedBaselineVehicle = vehicle
+    end
+
+    local velocity = root.AssemblyLinearVelocity
+    local horizontalVelocity = Vector3.new(velocity.X, 0, velocity.Z)
+
+    -- MESSPHASE
+    if not speedBaselineKmh then
+        local currentKmh = horizontalVelocity.Magnitude
+            * STUDS_TO_METERS * 3.6
+
+        if currentKmh > speedPeakKmh + 0.5 then
+            speedPeakKmh = currentKmh
+            speedLastIncrease = os.clock()
+        end
+
+        if speedPeakKmh > 3
+            and os.clock() - speedLastIncrease >= MEASURE_STABLE_TIME then
+            speedBaselineKmh = speedPeakKmh
+            speedMeasureShown = false
+        else
+            if not speedMeasureShown then
+                status.Text = "MEASURING TOP SPEED..."
+                status.TextColor3 = GREEN
+                speedMeasureShown = true
+            end
+            return
+        end
+    end
+
+    -- BOOST-PHASE
+    if not speedMeasureShown then
+        status.Text = string.format(
+            "TOP %d +%d = %d KM/H",
+            math.floor(speedBaselineKmh + 0.5),
+            SPEED_BONUS_KMH,
+            math.floor(speedBaselineKmh + SPEED_BONUS_KMH + 0.5)
+        )
+        status.TextColor3 = GREEN
+        speedMeasureShown = true
+    end
+
     local look = vehicle:GetPivot().LookVector
     local forward = Vector3.new(look.X, 0, look.Z)
 
@@ -1965,22 +1794,13 @@ speedConnection = RunService.Heartbeat:Connect(function(dt)
 
     forward = forward.Unit
 
-    local velocity = root.AssemblyLinearVelocity
-    local horizontalVelocity = Vector3.new(
-        velocity.X,
-        0,
-        velocity.Z
-    )
-
     local forwardSpeed = horizontalVelocity:Dot(forward)
     local sidewaysVelocity =
         horizontalVelocity - forward * forwardSpeed
 
-    local targetKmh = policeModeEnabled
-        and POLICE_SPEED_KMH
-        or TARGET_SPEED_KMH
-
-    local maxSpeed = kmhToStudsPerSecond(targetKmh)
+    local maxSpeed = kmhToStudsPerSecond(
+        speedBaselineKmh + SPEED_BONUS_KMH
+    )
     local acceleration = kmhToStudsPerSecond(
         ACCELERATION_KMH_PER_SECOND
     )
@@ -2000,7 +1820,7 @@ speedConnection = RunService.Heartbeat:Connect(function(dt)
     )
 end)
 
--- WALK HACK (auch aktiv bei Police Mode, dann mit 120)
+-- WALK HACK
 local walkConnection
 
 walkConnection = RunService.Heartbeat:Connect(function()
@@ -2039,7 +1859,7 @@ walkConnection = RunService.Heartbeat:Connect(function()
         end
     end
 
-    if not (walkHackEnabled or policeModeEnabled) or root.Anchored then
+    if not walkHackEnabled or root.Anchored then
         return
     end
 
@@ -2047,14 +1867,11 @@ walkConnection = RunService.Heartbeat:Connect(function()
 
     if moveDirection.Magnitude > 0 then
         local velocity = root.AssemblyLinearVelocity
-        local walkSpeed = policeModeEnabled
-            and POLICE_WALK_SPEED
-            or WALK_SPEED
 
         root.AssemblyLinearVelocity = Vector3.new(
-            moveDirection.X * walkSpeed,
+            moveDirection.X * WALK_SPEED,
             velocity.Y,
-            moveDirection.Z * walkSpeed
+            moveDirection.Z * WALK_SPEED
         )
     end
 end)
@@ -2080,13 +1897,11 @@ end)
 -- MINIMIZE AND RESTORE
 local function setContentVisible(visible)
     status.Visible = visible
-    button.Visible = visible
     antiCrashButton.Visible = visible
     antiFallButton.Visible = visible
     speedButton.Visible = visible
     walkButton.Visible = visible
     ragdollButton.Visible = visible
-    policeButton.Visible = visible
     robotButton.Visible = visible
     kukiButton.Visible = visible
     speedLabel.Visible = visible
@@ -2122,12 +1937,10 @@ end)
 -- CLOSE GUI
 close.Activated:Connect(function()
     guiClosed = true
-    farming = false
     antiCrashEnabled = false
     ANTI_CRASH_ENABLED = false
     antiFallEnabled = false
     antiRagdollEnabled = false
-    policeModeEnabled = false
     robotEscapeEnabled = false
     speedHackEnabled = false
     walkHackEnabled = false
@@ -2174,11 +1987,9 @@ end
 -- BACKGROUND CHECKS
 task.spawn(function()
     while gui.Parent do
-        if not farming then
-            updateAntiCrashRobotPause()   -- NEU
-            runAntiCrash()
-            runAntiFall()
-        end
+        updateAntiCrashRobotPause()
+        runAntiCrash()
+        runAntiFall()
 
         task.wait(0.03)
     end
@@ -2231,8 +2042,9 @@ makeTween(
     {Size = UDim2.fromOffset(320, FULL_HEIGHT)},
     Enum.EasingStyle.Back
 )
+
 -- ==========================================
--- GALAXY FARM GUI - JUMPER ADDON
+-- JUMPER ADDON
 -- Button ON/OFF + E zum Springen auf dem Scooter
 -- ==========================================
 
@@ -2240,11 +2052,10 @@ local jumperEnabled = false
 local jumperPower = 125
 local jumperCooldown = false
 
--- Vorhandene GUI-Elemente verwenden
 local jumperButton, jumperStroke, jumperGradient = createButton(
     "JumperButton",
     "JUMPER: OFF",
-    525,
+    427,
     Color3.fromRGB(55, 45, 110),
     PURPLE,
     {
@@ -2253,7 +2064,6 @@ local jumperButton, jumperStroke, jumperGradient = createButton(
     }
 )
 
--- Button aktivieren/deaktivieren
 jumperButton.Activated:Connect(function()
     if guiClosed then
         return
@@ -2302,7 +2112,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
         return
     end
 
-    -- Prüfen, ob der Spieler auf einem Fahrzeug sitzt
     local vehicle, seat, humanoid = getVehicle()
 
     if not vehicle or not seat or not humanoid then
@@ -2317,7 +2126,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
 
     jumperCooldown = true
 
-    -- Vorhandene horizontale Geschwindigkeit beibehalten
     local velocity = root.AssemblyLinearVelocity
 
     root.AssemblyLinearVelocity = Vector3.new(
@@ -2331,67 +2139,44 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end)
 end)
 
--- Jumper beim Minimieren ausblenden
 local oldSetContentVisible = setContentVisible
 
--- Ursprüngliche Funktion um den Jumper ergänzen
 setContentVisible = function(visible)
     oldSetContentVisible(visible)
     jumperButton.Visible = visible
 end
 
--- Fensterhöhe erweitern, damit der Button Platz hat
-FULL_HEIGHT = 660
-main.Size = UDim2.fromOffset(320, 660)
-
--- Geschwindigkeitsanzeige nach unten verschieben
-speedLabel.Position = UDim2.fromOffset(14, 575)
-
--- Beim Schließen Jumper deaktivieren
 close.Activated:Connect(function()
     jumperEnabled = false
 end)
 
 -- ==========================================
--- GALAXY FARM GUI - STRONG DYNAMIC SOFT FALL
--- FRÜHE BREMSUNG + BERGE + SCHRÄGE FLÄCHEN
+-- SOFT FALL
 -- ==========================================
 
 local softFallEnabled = false
 local softFallBusy = false
 local softFallCooldown = false
 
--- ==========================================
--- EINSTELLUNGEN
--- ==========================================
-
 local SOFT_FALL_MIN_KMH = 20
 
--- Bodenerkennung
 local SOFT_FALL_DETECTION_DISTANCE = 300
 local SOFT_FALL_RAY_OFFSET = 3
 
--- Dynamischer Bremsweg
 local SOFT_FALL_MIN_BRAKE_DISTANCE = 30
 local SOFT_FALL_MAX_BRAKE_DISTANCE = 200
 local SOFT_FALL_SPEED_DISTANCE_FACTOR = 2.5
 
--- Bremsverhalten
 local SOFT_FALL_TARGET_SPEED = -2
 local SOFT_FALL_MAX_DECELERATION = 100
 local SOFT_FALL_SMOOTHING = 5
 
--- Sicherheitsabstand zum Boden
 local SOFT_FALL_GROUND_MARGIN = 4
-
--- ==========================================
--- BUTTON
--- ==========================================
 
 local softFallButton, softFallStroke, softFallGradient = createButton(
     "SoftFallButton",
     "SOFT FALL: OFF",
-    575,
+    476,
     Color3.fromRGB(55, 45, 110),
     PURPLE,
     {
@@ -2433,11 +2218,6 @@ softFallButton.Activated:Connect(function()
         restoreStatus()
     end
 end)
-
--- ==========================================
--- BODEN ERKENNEN
--- BERGE UND SCHRÄGE FLÄCHEN
--- ==========================================
 
 local function softFallGetGroundDistance(vehicle)
     if not vehicle or not vehicle.PrimaryPart then
@@ -2494,10 +2274,6 @@ local function softFallGetGroundDistance(vehicle)
     return closestDistance, closestResult
 end
 
--- ==========================================
--- STARKE, GLEICHMÄSSIGE BREMSUNG
--- ==========================================
-
 local function softFallStop(vehicle, humanoid, groundResult)
     if softFallBusy
         or not vehicle
@@ -2528,19 +2304,16 @@ local function softFallStop(vehicle, humanoid, groundResult)
             local velocity = root.AssemblyLinearVelocity
             local fallSpeed = math.max(0, -velocity.Y)
 
-            -- Nicht weiter bremsen, wenn die Zielgeschwindigkeit erreicht ist
             if velocity.Y >= SOFT_FALL_TARGET_SPEED then
                 break
             end
 
-            -- Bodenabstand kontinuierlich neu messen
             local distance = softFallGetGroundDistance(vehicle)
 
             if not distance then
                 break
             end
 
-            -- Dynamischer Bremsweg abhängig von der Fallgeschwindigkeit
             local dynamicBrakeDistance =
                 SOFT_FALL_MIN_BRAKE_DISTANCE
                 + fallSpeed * SOFT_FALL_SPEED_DISTANCE_FACTOR
@@ -2551,13 +2324,11 @@ local function softFallStop(vehicle, humanoid, groundResult)
                 SOFT_FALL_MAX_BRAKE_DISTANCE
             )
 
-            -- Verbleibender sicherer Bremsweg
             local safeDistance = math.max(
                 distance - SOFT_FALL_GROUND_MARGIN,
                 1
             )
 
-            -- Physikalisch erforderliche Verzögerung berechnen
             local requiredDeceleration =
                 (
                     velocity.Y * velocity.Y
@@ -2565,14 +2336,12 @@ local function softFallStop(vehicle, humanoid, groundResult)
                     * SOFT_FALL_TARGET_SPEED
                 ) / (2 * safeDistance)
 
-            -- Stärkere Reaktion auf die erforderliche Verzögerung
             local deceleration = math.clamp(
                 requiredDeceleration * 2,
                 25,
                 SOFT_FALL_MAX_DECELERATION
             )
 
-            -- Zusätzliche Bremskraft bei Annäherung an den Boden
             if distance <= dynamicBrakeDistance then
                 local proximity = math.clamp(
                     1 - distance / dynamicBrakeDistance,
@@ -2586,20 +2355,17 @@ local function softFallStop(vehicle, humanoid, groundResult)
                 )
             end
 
-            -- Vertikale Geschwindigkeit schrittweise reduzieren
             local newY = math.min(
                 SOFT_FALL_TARGET_SPEED,
                 velocity.Y + deceleration * deltaTime
             )
 
-            -- Horizontale Bewegung beibehalten
             root.AssemblyLinearVelocity = Vector3.new(
                 velocity.X,
                 newY,
                 velocity.Z
             )
 
-            -- Rotation kontrolliert dämpfen
             root.AssemblyAngularVelocity =
                 root.AssemblyAngularVelocity:Lerp(
                     Vector3.zero,
@@ -2623,18 +2389,13 @@ local function softFallStop(vehicle, humanoid, groundResult)
     softFallBusy = false
 end
 
--- ==========================================
--- STURZÜBERWACHUNG
--- ==========================================
-
 task.spawn(function()
     while gui.Parent and not guiClosed do
         RunService.Heartbeat:Wait()
 
         if not softFallEnabled
             or softFallBusy
-            or softFallCooldown
-            or farming then
+            or softFallCooldown then
             continue
         end
 
@@ -2656,7 +2417,6 @@ task.spawn(function()
             * STUDS_TO_METERS
             * 3.6
 
-        -- Nur bei ausreichender Geschwindigkeit und Fallbewegung
         if velocity.Y >= -2
             or speedKmh < SOFT_FALL_MIN_KMH then
             continue
@@ -2671,7 +2431,6 @@ task.spawn(function()
 
         local fallSpeed = math.max(0, -velocity.Y)
 
-        -- Je schneller der Fall, desto früher bremsen
         local dynamicBrakeDistance =
             SOFT_FALL_MIN_BRAKE_DISTANCE
             + fallSpeed * SOFT_FALL_SPEED_DISTANCE_FACTOR
@@ -2682,7 +2441,6 @@ task.spawn(function()
             SOFT_FALL_MAX_BRAKE_DISTANCE
         )
 
-        -- Bremsung rechtzeitig aktivieren
         if distance <= dynamicBrakeDistance
             and distance > SOFT_FALL_GROUND_MARGIN then
 
@@ -2703,10 +2461,6 @@ task.spawn(function()
     end
 end)
 
--- ==========================================
--- BUTTON BEIM MINIMIEREN AUSBLENDEN
--- ==========================================
-
 local previousSetContentVisible = setContentVisible
 
 setContentVisible = function(visible)
@@ -2716,19 +2470,6 @@ setContentVisible = function(visible)
         softFallButton.Visible = visible
     end
 end
-
--- ==========================================
--- GUI-GRÖSSE
--- ==========================================
-
-FULL_HEIGHT = 660
-
-main.Size = UDim2.fromOffset(320, FULL_HEIGHT)
-speedLabel.Position = UDim2.fromOffset(14, 615)
-
--- ==========================================
--- BEIM SCHLIESSEN DEAKTIVIEREN
--- ==========================================
 
 close.Activated:Connect(function()
     softFallEnabled = false
@@ -2740,7 +2481,6 @@ print("[SOFT FALL] Soft-Fall-System geladen!")
 print("[JUMPER] Jumper-Addon geladen!")
 print("[JUMPER] Drücke (e) um zu springen")
 print("[DEBUG] kukirin life script geladen für:", player.Name)
-
 
 end
 
@@ -2777,35 +2517,11 @@ status.Text = "Fertig!"
 
 task.wait(0.5)
 
-TweenService:Create(
-    blur,
-    TweenInfo.new(0.5),
-    {Size = 0}
-):Play()
-
-TweenService:Create(
-    background,
-    TweenInfo.new(0.5),
-    {BackgroundTransparency = 1}
-):Play()
-
-TweenService:Create(
-    title,
-    TweenInfo.new(0.3),
-    {TextTransparency = 1}
-):Play()
-
-TweenService:Create(
-    status,
-    TweenInfo.new(0.3),
-    {TextTransparency = 1}
-):Play()
-
-TweenService:Create(
-    percentage,
-    TweenInfo.new(0.3),
-    {TextTransparency = 1}
-):Play()
+TweenService:Create(blur, TweenInfo.new(0.5), {Size = 0}):Play()
+TweenService:Create(background, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+TweenService:Create(title, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+TweenService:Create(status, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+TweenService:Create(percentage, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
 
 task.wait(0.6)
 
