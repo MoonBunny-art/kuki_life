@@ -95,8 +95,9 @@ percentage.Parent = background
 --// DEIN EIGENER LOCALSCRIPT-CODE
 local function runCustomCode()
 -- KUKIRIN GUI + GO TO KUKI
--- Scooter Hack: findet die Top-Speed des Scooters AUTOMATISCH heraus
---               und fährt dann Top-Speed + 25 km/h (z.B. 20 -> 45)
+-- Auto-Brake: drückst du 3 Sek. nichts, bremst der Scooter automatisch
+--             (jede Sekunde 0.2 Sek. "S") bis du wieder etwas drückst
+--             oder die Geschwindigkeit 0 km/h ist
 -- Walk Hack: Horizontale Geschwindigkeit = 60
 -- Anti Ragdoll: verhindert Ragdoll / Hinfallen
 -- Anti-Crash: schützt in die tatsächliche Bewegungsrichtung
@@ -122,9 +123,8 @@ local ANTI_CRASH_ENABLED = false
 local antiFallEnabled = false
 local antiRagdollEnabled = false
 local robotEscapeEnabled = false
-local speedHackEnabled = false
+local autoBrakeEnabled = false
 local walkHackEnabled = false
-local wPressed = false
 
 -- GUI SIZE
 local FULL_HEIGHT = 600
@@ -136,16 +136,13 @@ local ANTI_FALL_ANGULAR_DAMPING = 0.85
 
 -- SPEED SETTINGS
 local STUDS_TO_METERS = 0.28
-local ACCELERATION_KMH_PER_SECOND = 75
 local WALK_SPEED = 60
 
--- SCOOTER HACK: Top-Speed einmal messen, dann + SPEED_BONUS_KMH
-local SPEED_BONUS_KMH = 30
-local MEASURE_STABLE_TIME = 1.0   -- so lange darf die Speed nicht mehr steigen -> Top-Speed automatisch erkannt
-
-local function kmhToStudsPerSecond(kmh)
-    return (kmh / 3.6) / STUDS_TO_METERS
-end
+-- AUTO-BRAKE SETTINGS
+local AUTO_BRAKE_IDLE_TIME = 3      -- Sekunden ohne Eingabe, bis gebremst wird
+local AUTO_BRAKE_INTERVAL = 1       -- alle X Sekunden ein Brems-Impuls
+local AUTO_BRAKE_PRESS_TIME = 0.2   -- so lange wird "S" gedrückt
+local AUTO_BRAKE_STOP_KMH = 1       -- ab hier gilt der Scooter als stehend
 
 -- COLORS
 local PURPLE = Color3.fromRGB(135, 80, 255)
@@ -419,10 +416,10 @@ local antiFallButton, antiFallStroke, antiFallGradient =
         }
     )
 
--- SPEED HACK BUTTON
-local speedButton, speedStroke, speedGradient = createButton(
-    "SpeedHackButton",
-    "SCOOTER HACK: OFF",
+-- AUTO-BRAKE BUTTON
+local autoBrakeButton, autoBrakeStroke, autoBrakeGradient = createButton(
+    "AutoBrakeButton",
+    "AUTO-BRAKE: OFF",
     182,
     Color3.fromRGB(55, 45, 110),
     PURPLE,
@@ -1604,29 +1601,203 @@ robotButton.Activated:Connect(function()
     end
 end)
 
--- SCOOTER HACK: TOP-SPEED WIRD AUTOMATISCH ERMITTELT
--- Das Script lernt die normale Top-Speed jedes Scooters automatisch,
--- sobald du fährst (auch wenn der Hack aus ist). Pro Fahrzeug einmal.
-local topSpeedByVehicle = setmetatable({}, {__mode = "k"})  -- Fahrzeug -> km/h
-local learnPeak = {}   -- Fahrzeug -> {peak, lastIncrease}
-local lastBoostText = nil
+-- AUTO-BRAKE
+local lastActivity = os.clock()      -- Zeitpunkt der letzten Eingabe
+local nextBrakePulse = 0
+local autoBraking = false            -- true, solange der Brems-Impuls läuft
+local brakeGraceUntil = 0            -- kurze Pause nach dem Impuls
+local userInterrupted = false        -- echte Eingabe während eines Impulses
+local sKeyHeld = false
 
--- SPEED HACK TOGGLE
-speedButton.Activated:Connect(function()
-    speedHackEnabled = not speedHackEnabled
+local virtualInput
+do
+    local ok, vim = pcall(function()
+        return game:GetService("VirtualInputManager")
+    end)
 
-    if speedHackEnabled then
-        speedButton.Text = "SCOOTER HACK: ON"
-        speedButton.BackgroundColor3 =
-            Color3.fromRGB(35, 115, 90)
+    if ok then
+        virtualInput = vim
+    end
+end
 
-        status.Text = "SCOOTER HACK: TOP SPEED AUTO"
+local function setSKey(down)
+    if not virtualInput then return false end
+
+    local ok = pcall(function()
+        virtualInput:SendKeyEvent(down, Enum.KeyCode.S, false, game)
+    end)
+
+    if ok then
+        sKeyHeld = down
+    end
+
+    return ok
+end
+
+local function releaseSKey()
+    if sKeyHeld then
+        setSKey(false)
+        sKeyHeld = false
+    end
+end
+
+local function getHorizontalKmh(vehicle)
+    local root = vehicle and vehicle.PrimaryPart
+    if not root then return 0 end
+
+    local v = root.AssemblyLinearVelocity
+
+    return Vector3.new(v.X, 0, v.Z).Magnitude * STUDS_TO_METERS * 3.6
+end
+
+-- Ein Brems-Impuls: "S" für AUTO_BRAKE_PRESS_TIME Sekunden.
+-- Falls Tastendrücke per Script nicht möglich sind, wird stattdessen
+-- die Geschwindigkeit des Scooters kurz abgebremst.
+local function brakePulse(vehicle)
+    autoBraking = true
+    userInterrupted = false
+
+    local pressed = setSKey(true)
+    local elapsed = 0
+
+    while elapsed < AUTO_BRAKE_PRESS_TIME
+        and gui.Parent
+        and autoBrakeEnabled
+        and not userInterrupted do
+
+        local dt = RunService.Heartbeat:Wait()
+        elapsed += dt
+
+        if not pressed then
+            local root = vehicle.PrimaryPart
+
+            if root and root.Parent and not root.Anchored then
+                local vel = root.AssemblyLinearVelocity
+                local factor = math.max(0, 1 - dt * 6)
+
+                root.AssemblyLinearVelocity = Vector3.new(
+                    vel.X * factor,
+                    vel.Y,
+                    vel.Z * factor
+                )
+            end
+        end
+    end
+
+    releaseSKey()
+
+    brakeGraceUntil = os.clock() + 0.2
+    autoBraking = false
+end
+
+-- Echte Eingaben erkennen (Tasten, Maus-Klicks, Touch, Controller)
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.MouseWheel then
+        return
+    end
+
+    -- Das vom Script simulierte "S" ignorieren
+    if (autoBraking or os.clock() < brakeGraceUntil)
+        and input.KeyCode == Enum.KeyCode.S then
+        return
+    end
+
+    lastActivity = os.clock()
+
+    if autoBraking then
+        userInterrupted = true
+    end
+end)
+
+local autoBrakeConnection
+
+autoBrakeConnection = RunService.Heartbeat:Connect(function()
+    if not gui.Parent then
+        autoBrakeConnection:Disconnect()
+        return
+    end
+
+    local now = os.clock()
+
+    if not autoBrakeEnabled then
+        lastActivity = now
+        return
+    end
+
+    if autoBraking then return end
+
+    local vehicle, seat, humanoid = getVehicle()
+
+    -- Nur auf dem Scooter aktiv
+    if not vehicle or not seat or not humanoid or humanoid.Health <= 0 then
+        lastActivity = now
+        return
+    end
+
+    -- Gedrückte Tasten / Gas / Lenkung / Stick prüfen
+    if now >= brakeGraceUntil then
+        local held = false
+
+        for _, key in ipairs(UserInputService:GetKeysPressed()) do
+            if key.KeyCode ~= Enum.KeyCode.Unknown then
+                held = true
+                break
+            end
+        end
+
+        if held
+            or math.abs(seat.ThrottleFloat) > 0.05
+            or math.abs(seat.SteerFloat) > 0.05
+            or humanoid.MoveDirection.Magnitude > 0.1 then
+            lastActivity = now
+        end
+    else
+        return
+    end
+
+    -- Steht der Scooter schon, gibt es nichts zu bremsen
+    if getHorizontalKmh(vehicle) <= AUTO_BRAKE_STOP_KMH then
+        lastActivity = now
+        return
+    end
+
+    if now - lastActivity >= AUTO_BRAKE_IDLE_TIME
+        and now >= nextBrakePulse then
+
+        nextBrakePulse = now + AUTO_BRAKE_INTERVAL
+
+        status.Text = "AUTO-BRAKE: BREMSE..."
+        status.TextColor3 = GREEN
+
+        task.spawn(brakePulse, vehicle)
+    end
+end)
+
+-- AUTO-BRAKE TOGGLE
+autoBrakeButton.Activated:Connect(function()
+    if guiClosed then return end
+
+    autoBrakeEnabled = not autoBrakeEnabled
+    lastActivity = os.clock()
+
+    if autoBrakeEnabled then
+        autoBrakeButton.Text = "AUTO-BRAKE: ON"
+        autoBrakeButton.BackgroundColor3 = Color3.fromRGB(35, 115, 90)
+        setGreenGradient(autoBrakeGradient)
+
+        status.Text = "AUTO-BRAKE ACTIVE"
         status.TextColor3 = GREEN
     else
-        speedButton.Text = "SCOOTER HACK: OFF"
-        speedButton.BackgroundColor3 =
-            Color3.fromRGB(55, 45, 110)
+        autoBrakeButton.Text = "AUTO-BRAKE: OFF"
+        autoBrakeButton.BackgroundColor3 = Color3.fromRGB(55, 45, 110)
 
+        autoBrakeGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(145, 75, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(65, 100, 230))
+        })
+
+        releaseSKey()
         restoreStatus()
     end
 end)
@@ -1670,153 +1841,6 @@ end)
 kukiButton.Activated:Connect(function()
     if guiClosed then return end
     task.spawn(runKuki)
-end)
-
--- W KEY DETECTION
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-
-    if input.KeyCode == Enum.KeyCode.W then
-        wPressed = true
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.W then
-        wPressed = false
-    end
-end)
-
-UserInputService.WindowFocusReleased:Connect(function()
-    wPressed = false
-end)
-
--- SPEED HACK (AUTOMATISCHE TOP-SPEED)
--- 1) Solange du Gas gibst, merkt sich das Script die höchste normale
---    Geschwindigkeit des Scooters. Steigt sie ~1 Sekunde nicht mehr,
---    gilt sie als Top-Speed (läuft automatisch, auch bei Hack AUS).
--- 2) Bei eingeschaltetem Hack fährt der Scooter dann Top-Speed + 25 km/h
---    (z.B. 20 -> 45 km/h). Erst nach der Erkennung wird beschleunigt.
--- 3) Wird später eine höhere normale Speed erreicht, lernt das Script nach.
--- Walk Hack hat Vorrang, damit beide nicht gleichzeitig überschreiben.
-local speedConnection
-
-speedConnection = RunService.Heartbeat:Connect(function(dt)
-    if not gui.Parent or walkHackEnabled then
-        return
-    end
-
-    local vehicle, seat, humanoid = getVehicle()
-
-    if not vehicle or not seat or not humanoid
-        or humanoid.Health <= 0
-        or not vehicle.PrimaryPart then
-        return
-    end
-
-    local root = vehicle.PrimaryPart
-
-    if root.Anchored then
-        return
-    end
-
-    local throttling = wPressed or seat.ThrottleFloat > 0.1
-
-    local velocity = root.AssemblyLinearVelocity
-    local horizontalVelocity = Vector3.new(velocity.X, 0, velocity.Z)
-    local currentKmh = horizontalVelocity.Magnitude * STUDS_TO_METERS * 3.6
-
-    local known = topSpeedByVehicle[vehicle]
-    local boosting = speedHackEnabled and throttling and known ~= nil
-
-    -- AUTOMATISCHES LERNEN (nur mit normaler, nicht geboosteter Speed)
-    if not boosting then
-        local info = learnPeak[vehicle]
-
-        if not info then
-            info = {peak = 0, lastIncrease = os.clock()}
-            learnPeak[vehicle] = info
-        end
-
-        if known then
-            -- bereits gelernt: nur nach oben korrigieren
-            if throttling and currentKmh > known + 0.5 then
-                topSpeedByVehicle[vehicle] = currentKmh
-            end
-        elseif throttling then
-            if currentKmh > info.peak + 0.5 then
-                info.peak = currentKmh
-                info.lastIncrease = os.clock()
-            end
-
-            if info.peak > 3
-                and os.clock() - info.lastIncrease >= MEASURE_STABLE_TIME then
-                topSpeedByVehicle[vehicle] = info.peak
-                known = info.peak
-
-                if speedHackEnabled then
-                    status.Text = string.format(
-                        "TOP SPEED: %d KM/H (AUTO)",
-                        math.floor(info.peak + 0.5)
-                    )
-                    status.TextColor3 = GREEN
-                end
-            end
-        else
-            -- kein Gas: Timer nicht ablaufen lassen
-            info.lastIncrease = os.clock()
-        end
-    end
-
-    -- BOOST
-    if not speedHackEnabled or not throttling or not known then
-        return
-    end
-
-    local boostText = string.format(
-        "TOP %d +%d = %d KM/H",
-        math.floor(known + 0.5),
-        SPEED_BONUS_KMH,
-        math.floor(known + SPEED_BONUS_KMH + 0.5)
-    )
-
-    if boostText ~= lastBoostText then
-        lastBoostText = boostText
-        status.Text = boostText
-        status.TextColor3 = GREEN
-    end
-
-    local look = vehicle:GetPivot().LookVector
-    local forward = Vector3.new(look.X, 0, look.Z)
-
-    if forward.Magnitude < 0.001 then
-        return
-    end
-
-    forward = forward.Unit
-
-    local forwardSpeed = horizontalVelocity:Dot(forward)
-    local sidewaysVelocity =
-        horizontalVelocity - forward * forwardSpeed
-
-    local maxSpeed = kmhToStudsPerSecond(known + SPEED_BONUS_KMH)
-    local acceleration = kmhToStudsPerSecond(
-        ACCELERATION_KMH_PER_SECOND
-    )
-
-    local newForwardSpeed = math.min(
-        forwardSpeed + acceleration * dt,
-        maxSpeed
-    )
-
-    local newHorizontalVelocity =
-        forward * newForwardSpeed + sidewaysVelocity
-
-    root.AssemblyLinearVelocity = Vector3.new(
-        newHorizontalVelocity.X,
-        velocity.Y,
-        newHorizontalVelocity.Z
-    )
 end)
 
 -- WALK HACK
@@ -1898,7 +1922,7 @@ local function setContentVisible(visible)
     status.Visible = visible
     antiCrashButton.Visible = visible
     antiFallButton.Visible = visible
-    speedButton.Visible = visible
+    autoBrakeButton.Visible = visible
     walkButton.Visible = visible
     ragdollButton.Visible = visible
     robotButton.Visible = visible
@@ -1941,15 +1965,11 @@ close.Activated:Connect(function()
     antiFallEnabled = false
     antiRagdollEnabled = false
     robotEscapeEnabled = false
-    speedHackEnabled = false
+    autoBrakeEnabled = false
     walkHackEnabled = false
-    wPressed = false
 
+    releaseSKey()
     stopAntiRagdoll()
-
-    if speedConnection then
-        speedConnection:Disconnect()
-    end
 
     if walkConnection then
         walkConnection:Disconnect()
