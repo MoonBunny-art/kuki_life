@@ -95,8 +95,8 @@ percentage.Parent = background
 --// DEIN EIGENER LOCALSCRIPT-CODE
 local function runCustomCode()
 -- KUKIRIN GUI + GO TO KUKI
--- Scooter Hack: misst EINMAL die Top-Speed des Scooters und fährt dann
---               Top-Speed + 25 km/h (z.B. 20 -> 45)
+-- Scooter Hack: findet die Top-Speed des Scooters AUTOMATISCH heraus
+--               und fährt dann Top-Speed + 25 km/h (z.B. 20 -> 45)
 -- Walk Hack: Horizontale Geschwindigkeit = 60
 -- Anti Ragdoll: verhindert Ragdoll / Hinfallen
 -- Anti-Crash: schützt in die tatsächliche Bewegungsrichtung
@@ -140,8 +140,8 @@ local ACCELERATION_KMH_PER_SECOND = 75
 local WALK_SPEED = 60
 
 -- SCOOTER HACK: Top-Speed einmal messen, dann + SPEED_BONUS_KMH
-local SPEED_BONUS_KMH = 40
-local MEASURE_STABLE_TIME = 1.0   -- so lange darf die Speed nicht mehr steigen -> Top-Speed erkannt
+local SPEED_BONUS_KMH = 25
+local MEASURE_STABLE_TIME = 1.0   -- so lange darf die Speed nicht mehr steigen -> Top-Speed automatisch erkannt
 
 local function kmhToStudsPerSecond(kmh)
     return (kmh / 3.6) / STUDS_TO_METERS
@@ -1604,32 +1604,23 @@ robotButton.Activated:Connect(function()
     end
 end)
 
--- SCOOTER HACK: TOP-SPEED EINMAL MESSEN, DANN + SPEED_BONUS_KMH
-local speedBaselineKmh = nil       -- gemessene Top-Speed (nil = noch nicht gemessen)
-local speedBaselineVehicle = nil   -- für welches Fahrzeug gemessen wurde
-local speedPeakKmh = 0
-local speedLastIncrease = 0
-local speedMeasureShown = false
-
-local function resetSpeedMeasure()
-    speedBaselineKmh = nil
-    speedBaselineVehicle = nil
-    speedPeakKmh = 0
-    speedLastIncrease = os.clock()
-    speedMeasureShown = false
-end
+-- SCOOTER HACK: TOP-SPEED WIRD AUTOMATISCH ERMITTELT
+-- Das Script lernt die normale Top-Speed jedes Scooters automatisch,
+-- sobald du fährst (auch wenn der Hack aus ist). Pro Fahrzeug einmal.
+local topSpeedByVehicle = setmetatable({}, {__mode = "k"})  -- Fahrzeug -> km/h
+local learnPeak = {}   -- Fahrzeug -> {peak, lastIncrease}
+local lastBoostText = nil
 
 -- SPEED HACK TOGGLE
 speedButton.Activated:Connect(function()
     speedHackEnabled = not speedHackEnabled
-    resetSpeedMeasure()
 
     if speedHackEnabled then
         speedButton.Text = "SCOOTER HACK: ON"
         speedButton.BackgroundColor3 =
             Color3.fromRGB(35, 115, 90)
 
-        status.Text = "HOLD W: MESSE TOP SPEED"
+        status.Text = "SCOOTER HACK: TOP SPEED AUTO"
         status.TextColor3 = GREEN
     else
         speedButton.Text = "SCOOTER HACK: OFF"
@@ -1700,29 +1691,18 @@ UserInputService.WindowFocusReleased:Connect(function()
     wPressed = false
 end)
 
--- SPEED HACK
--- 1) Beim ersten Gasgeben wird die normale Top-Speed des Scooters gemessen
---    (keine Beschleunigung durch den Hack).
--- 2) Sobald die Speed MEASURE_STABLE_TIME Sekunden nicht mehr steigt,
---    wird sie als Top-Speed gespeichert.
--- 3) Danach fährt der Scooter Top-Speed + SPEED_BONUS_KMH
---    (z.B. 20 -> 45 km/h).
+-- SPEED HACK (AUTOMATISCHE TOP-SPEED)
+-- 1) Solange du Gas gibst, merkt sich das Script die höchste normale
+--    Geschwindigkeit des Scooters. Steigt sie ~1 Sekunde nicht mehr,
+--    gilt sie als Top-Speed (läuft automatisch, auch bei Hack AUS).
+-- 2) Bei eingeschaltetem Hack fährt der Scooter dann Top-Speed + 25 km/h
+--    (z.B. 20 -> 45 km/h). Erst nach der Erkennung wird beschleunigt.
+-- 3) Wird später eine höhere normale Speed erreicht, lernt das Script nach.
 -- Walk Hack hat Vorrang, damit beide nicht gleichzeitig überschreiben.
 local speedConnection
 
 speedConnection = RunService.Heartbeat:Connect(function(dt)
-    if not gui.Parent
-        or not speedHackEnabled
-        or walkHackEnabled then
-        return
-    end
-
-    if not wPressed then
-        -- Messung abbrechen, wenn W losgelassen wird, bevor sie fertig ist
-        if not speedBaselineKmh then
-            speedPeakKmh = 0
-            speedLastIncrease = os.clock()
-        end
+    if not gui.Parent or walkHackEnabled then
         return
     end
 
@@ -1740,49 +1720,70 @@ speedConnection = RunService.Heartbeat:Connect(function(dt)
         return
     end
 
-    -- Anderes Fahrzeug -> neu messen
-    if speedBaselineVehicle ~= vehicle then
-        resetSpeedMeasure()
-        speedBaselineVehicle = vehicle
-    end
+    local throttling = wPressed or seat.ThrottleFloat > 0.1
 
     local velocity = root.AssemblyLinearVelocity
     local horizontalVelocity = Vector3.new(velocity.X, 0, velocity.Z)
+    local currentKmh = horizontalVelocity.Magnitude * STUDS_TO_METERS * 3.6
 
-    -- MESSPHASE
-    if not speedBaselineKmh then
-        local currentKmh = horizontalVelocity.Magnitude
-            * STUDS_TO_METERS * 3.6
+    local known = topSpeedByVehicle[vehicle]
+    local boosting = speedHackEnabled and throttling and known ~= nil
 
-        if currentKmh > speedPeakKmh + 0.5 then
-            speedPeakKmh = currentKmh
-            speedLastIncrease = os.clock()
+    -- AUTOMATISCHES LERNEN (nur mit normaler, nicht geboosteter Speed)
+    if not boosting then
+        local info = learnPeak[vehicle]
+
+        if not info then
+            info = {peak = 0, lastIncrease = os.clock()}
+            learnPeak[vehicle] = info
         end
 
-        if speedPeakKmh > 3
-            and os.clock() - speedLastIncrease >= MEASURE_STABLE_TIME then
-            speedBaselineKmh = speedPeakKmh
-            speedMeasureShown = false
-        else
-            if not speedMeasureShown then
-                status.Text = "MEASURING TOP SPEED..."
-                status.TextColor3 = GREEN
-                speedMeasureShown = true
+        if known then
+            -- bereits gelernt: nur nach oben korrigieren
+            if throttling and currentKmh > known + 0.5 then
+                topSpeedByVehicle[vehicle] = currentKmh
             end
-            return
+        elseif throttling then
+            if currentKmh > info.peak + 0.5 then
+                info.peak = currentKmh
+                info.lastIncrease = os.clock()
+            end
+
+            if info.peak > 3
+                and os.clock() - info.lastIncrease >= MEASURE_STABLE_TIME then
+                topSpeedByVehicle[vehicle] = info.peak
+                known = info.peak
+
+                if speedHackEnabled then
+                    status.Text = string.format(
+                        "TOP SPEED: %d KM/H (AUTO)",
+                        math.floor(info.peak + 0.5)
+                    )
+                    status.TextColor3 = GREEN
+                end
+            end
+        else
+            -- kein Gas: Timer nicht ablaufen lassen
+            info.lastIncrease = os.clock()
         end
     end
 
-    -- BOOST-PHASE
-    if not speedMeasureShown then
-        status.Text = string.format(
-            "TOP %d +%d = %d KM/H",
-            math.floor(speedBaselineKmh + 0.5),
-            SPEED_BONUS_KMH,
-            math.floor(speedBaselineKmh + SPEED_BONUS_KMH + 0.5)
-        )
+    -- BOOST
+    if not speedHackEnabled or not throttling or not known then
+        return
+    end
+
+    local boostText = string.format(
+        "TOP %d +%d = %d KM/H",
+        math.floor(known + 0.5),
+        SPEED_BONUS_KMH,
+        math.floor(known + SPEED_BONUS_KMH + 0.5)
+    )
+
+    if boostText ~= lastBoostText then
+        lastBoostText = boostText
+        status.Text = boostText
         status.TextColor3 = GREEN
-        speedMeasureShown = true
     end
 
     local look = vehicle:GetPivot().LookVector
@@ -1798,9 +1799,7 @@ speedConnection = RunService.Heartbeat:Connect(function(dt)
     local sidewaysVelocity =
         horizontalVelocity - forward * forwardSpeed
 
-    local maxSpeed = kmhToStudsPerSecond(
-        speedBaselineKmh + SPEED_BONUS_KMH
-    )
+    local maxSpeed = kmhToStudsPerSecond(known + SPEED_BONUS_KMH)
     local acceleration = kmhToStudsPerSecond(
         ACCELERATION_KMH_PER_SECOND
     )
