@@ -140,7 +140,7 @@ local ACCELERATION_KMH_PER_SECOND = 75
 local WALK_SPEED = 60
 
 -- SCOOTER HACK: Top-Speed einmal messen, dann + SPEED_BONUS_KMH
-local SPEED_BONUS_KMH = 25
+local SPEED_BONUS_KMH = 40
 local MEASURE_STABLE_TIME = 1.0   -- so lange darf die Speed nicht mehr steigen -> Top-Speed erkannt
 
 local function kmhToStudsPerSecond(kmh)
