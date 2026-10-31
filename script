@@ -127,7 +127,8 @@ local autoBrakeEnabled = false
 local walkHackEnabled = false
 
 -- GUI SIZE
-local FULL_HEIGHT = 600
+local FULL_HEIGHT = 620
+local WIDTH = 360
 
 -- ANTI-FALL SETTINGS
 local MAX_BACKWARD_TILT = 0.3
@@ -201,8 +202,8 @@ end
 -- MAIN WINDOW
 local main = Instance.new("Frame")
 main.Name = "Main"
-main.Size = UDim2.fromOffset(320, FULL_HEIGHT)
-main.Position = UDim2.new(0.5, -160, 0.5, -math.floor(FULL_HEIGHT / 2))
+main.Size = UDim2.fromOffset(WIDTH, FULL_HEIGHT)
+main.Position = UDim2.new(0.5, -math.floor(WIDTH / 2), 0.5, -math.floor(FULL_HEIGHT / 2))
 main.BackgroundColor3 = Color3.fromRGB(13, 10, 35)
 main.BorderSizePixel = 0
 main.ClipsDescendants = true
@@ -210,7 +211,7 @@ main.Active = true
 main.Parent = gui
 
 addCorner(main, 18)
-local mainStroke = addStroke(main, PURPLE, 1.5, 0.1)
+local mainStroke = addStroke(main, PURPLE, 2, 0.1)
 
 local mainGradient = Instance.new("UIGradient")
 mainGradient.Color = ColorSequence.new({
@@ -278,110 +279,399 @@ end
 -- HEADER
 local header = Instance.new("Frame")
 header.Name = "Header"
-header.Size = UDim2.new(1, 0, 0, 45)
-header.BackgroundColor3 = Color3.fromRGB(30, 18, 65)
-header.BackgroundTransparency = 0.08
+header.Size = UDim2.new(1, 0, 0, 56)
+header.BackgroundColor3 = WHITE
+header.BackgroundTransparency = 0.2
 header.BorderSizePixel = 0
 header.Active = true
 header.ZIndex = 3
 header.Parent = main
 
-addCorner(header, 16)
+addCorner(header, 18)
+
+local headerGradient = Instance.new("UIGradient")
+headerGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(70, 35, 150)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 40, 110))
+})
+headerGradient.Rotation = 0
+headerGradient.Parent = header
+
+-- Logo "K"
+local logo = Instance.new("TextLabel")
+logo.Name = "Logo"
+logo.Size = UDim2.fromOffset(34, 44)
+logo.Position = UDim2.fromOffset(16, 6)
+logo.BackgroundTransparency = 1
+logo.Text = "K"
+logo.TextColor3 = WHITE
+logo.TextSize = 38
+logo.Font = Enum.Font.GothamBlack
+logo.ZIndex = 4
+logo.Parent = header
+
+local logoGradient = Instance.new("UIGradient")
+logoGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 120, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(90, 150, 255))
+})
+logoGradient.Rotation = 60
+logoGradient.Parent = logo
+
+-- Titel mit Buchstabenabstand
+local spacedTitle = ("KUKIRIN LIFE"):gsub("%S", "%0\u{2009}")
 
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Size = UDim2.new(1, -105, 1, 0)
-title.Position = UDim2.fromOffset(13, 0)
+title.Size = UDim2.new(1, -170, 0, 24)
+title.Position = UDim2.fromOffset(60, 8)
 title.BackgroundTransparency = 1
-title.Text = "KUKIRIN LIFE"
-title.TextColor3 = WHITE
-title.TextSize = 17
+title.Text = spacedTitle
+title.TextColor3 = Color3.fromRGB(235, 225, 255)
+title.TextSize = 19
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.ZIndex = 4
 title.Parent = header
 
+local credit = Instance.new("TextLabel")
+credit.Name = "Credit"
+credit.Size = UDim2.new(1, -170, 0, 14)
+credit.Position = UDim2.fromOffset(60, 33)
+credit.BackgroundTransparency = 1
+credit.Text = "V3  •  made by bdaircool"
+credit.TextColor3 = Color3.fromRGB(160, 150, 220)
+credit.TextSize = 10
+credit.Font = Enum.Font.GothamMedium
+credit.TextXAlignment = Enum.TextXAlignment.Left
+credit.ZIndex = 4
+credit.Parent = header
+
+local function styleHeaderButton(btn, strokeColor)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 16, 62)
+    btn.BackgroundTransparency = 0.1
+    btn.TextColor3 = WHITE
+    btn.Font = Enum.Font.GothamBold
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    btn.ZIndex = 5
+    addCorner(btn, 16)
+    addStroke(btn, strokeColor, 1.5, 0.2)
+end
+
 local minimize = Instance.new("TextButton")
 minimize.Name = "Minimize"
-minimize.Size = UDim2.fromOffset(30, 28)
-minimize.Position = UDim2.new(1, -69, 0, 8)
-minimize.BackgroundColor3 = PURPLE
+minimize.Size = UDim2.fromOffset(32, 32)
+minimize.Position = UDim2.new(1, -84, 0.5, -16)
 minimize.Text = "-"
-minimize.TextColor3 = WHITE
 minimize.TextSize = 22
-minimize.Font = Enum.Font.GothamBold
-minimize.BorderSizePixel = 0
-minimize.ZIndex = 5
+styleHeaderButton(minimize, PURPLE)
 minimize.Parent = header
-
-addCorner(minimize, 9)
 
 local close = Instance.new("TextButton")
 close.Name = "Close"
-close.Size = UDim2.fromOffset(30, 28)
-close.Position = UDim2.new(1, -34, 0, 8)
-close.BackgroundColor3 = RED
+close.Size = UDim2.fromOffset(32, 32)
+close.Position = UDim2.new(1, -46, 0.5, -16)
 close.Text = "X"
-close.TextColor3 = WHITE
-close.TextSize = 18
-close.Font = Enum.Font.GothamBold
-close.BorderSizePixel = 0
-close.ZIndex = 5
+close.TextSize = 16
+styleHeaderButton(close, RED)
 close.Parent = header
 
-addCorner(close, 9)
+-- LISTEN-PANEL
+local panel = Instance.new("Frame")
+panel.Name = "Panel"
+panel.Size = UDim2.new(1, -24, 1, -124)
+panel.Position = UDim2.fromOffset(12, 66)
+panel.BackgroundColor3 = Color3.fromRGB(10, 8, 34)
+panel.BackgroundTransparency = 0.2
+panel.BorderSizePixel = 0
+panel.ZIndex = 4
+panel.Parent = main
 
--- STATUS
+addCorner(panel, 20)
+addStroke(panel, Color3.fromRGB(70, 90, 220), 1.2, 0.5)
+
+local listFrame = Instance.new("ScrollingFrame")
+listFrame.Name = "List"
+listFrame.Size = UDim2.new(1, -12, 1, -12)
+listFrame.Position = UDim2.fromOffset(6, 6)
+listFrame.BackgroundTransparency = 1
+listFrame.BorderSizePixel = 0
+listFrame.ScrollBarThickness = 3
+listFrame.ScrollBarImageColor3 = PURPLE
+listFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+listFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+listFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+listFrame.ZIndex = 4
+listFrame.Parent = panel
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 8)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = listFrame
+
+local listPadding = Instance.new("UIPadding")
+listPadding.PaddingRight = UDim.new(0, 6)
+listPadding.PaddingTop = UDim.new(0, 2)
+listPadding.PaddingBottom = UDim.new(0, 2)
+listPadding.Parent = listFrame
+
+-- FOOTER (Status links, Speed rechts)
+local footerBar = Instance.new("Frame")
+footerBar.Name = "FooterBar"
+footerBar.Size = UDim2.new(1, -24, 0, 42)
+footerBar.Position = UDim2.new(0, 12, 1, -50)
+footerBar.BackgroundColor3 = WHITE
+footerBar.BackgroundTransparency = 0.1
+footerBar.BorderSizePixel = 0
+footerBar.ZIndex = 4
+footerBar.Parent = main
+
+addCorner(footerBar, 21)
+addStroke(footerBar, Color3.fromRGB(110, 90, 240), 1.2, 0.4)
+
+local footerGradient = Instance.new("UIGradient")
+footerGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 30, 130)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 45, 120))
+})
+footerGradient.Parent = footerBar
+
 local status = Instance.new("TextLabel")
 status.Name = "Status"
-status.Size = UDim2.new(1, -28, 0, 25)
-status.Position = UDim2.fromOffset(14, 54)
+status.Size = UDim2.new(1, -150, 1, 0)
+status.Position = UDim2.fromOffset(18, 0)
 status.BackgroundTransparency = 1
 status.Text = "SYSTEM READY"
 status.TextColor3 = GREEN
 status.TextSize = 12
-status.Font = Enum.Font.GothamMedium
+status.Font = Enum.Font.GothamBold
 status.TextXAlignment = Enum.TextXAlignment.Left
-status.ZIndex = 4
-status.Parent = main
+status.TextTruncate = Enum.TextTruncate.AtEnd
+status.ZIndex = 5
+status.Parent = footerBar
 
--- BUTTON CREATOR
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Name = "SpeedLabel"
+speedLabel.Size = UDim2.fromOffset(130, 42)
+speedLabel.Position = UDim2.new(1, -144, 0, 0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "SPEED: 0 KM/H"
+speedLabel.TextColor3 = WHITE
+speedLabel.TextSize = 12
+speedLabel.Font = Enum.Font.GothamBold
+speedLabel.TextXAlignment = Enum.TextXAlignment.Right
+speedLabel.ZIndex = 5
+speedLabel.Parent = footerBar
+
+-- ZEILEN-ERSTELLER (Icon + Titel + Beschreibung + Schalter)
+-- Gibt weiterhin (Button, Stroke, Gradient) zurück: der Button ist ein
+-- unsichtbarer Klick-Layer über der ganzen Zeile. Sein Text (".. ON"/".. OFF")
+-- steuert den Schalter, so bleibt die restliche Logik unverändert.
+local ROW_META = {
+    AntiCrashButton   = {"🛡️", "Anti-Crash", "Schützt in Bewegungsrichtung"},
+    AntiFallButton    = {"🛴", "Anti-Fall", "Verhindert Nach-hinten-Kippen"},
+    AutoBrakeButton   = {"🛑", "Auto-Brake", "Bremst nach 3 Sek. ohne Eingabe"},
+    WalkHackButton    = {"🏃", "Walk Hack", "Horizontale Geschwindigkeit = 60"},
+    AntiRagdollButton = {"🧍", "Anti Ragdoll", "Verhindert Ragdoll / Hinfallen"},
+    RobotEscapeButton = {"🚔", "Police Escape", "Teleportiert weg von Robotern"},
+    GoToKukiButton    = {"📍", "Go To Kuki", "Teleportiert zum Fahrzeug + Enter"},
+    JumperButton      = {"🦘", "Jumper", "Scooter springt mit E"},
+    SoftFallButton    = {"🪂", "Soft Fall", "Weiche Landung bei Stürzen"},
+}
+
+local ROW_OFF_COLOR = Color3.fromRGB(205, 50, 85)
+local ROW_ON_COLOR = Color3.fromRGB(45, 225, 120)
+local rowOrder = 0
+
 local function createButton(
     name, text, y, baseColor, strokeColor, gradientColors
 )
+    local meta = ROW_META[name] or {"•", name, ""}
+    local isAction = name == "GoToKukiButton"
+    rowOrder += 1
+
+    local row = Instance.new("Frame")
+    row.Name = name .. "Row"
+    row.Size = UDim2.new(1, 0, 0, 52)
+    row.BackgroundColor3 = WHITE
+    row.BorderSizePixel = 0
+    row.LayoutOrder = rowOrder
+    row.ZIndex = 5
+    row.Parent = listFrame
+
+    addCorner(row, 26)
+    local rowStroke = addStroke(row, Color3.fromRGB(95, 85, 230), 1.2, 0.35)
+
+    local rowGradient = Instance.new("UIGradient")
+    rowGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(34, 24, 92)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(16, 18, 64))
+    })
+    rowGradient.Rotation = 0
+    rowGradient.Parent = row
+
+    -- Icon-Kreis
+    local iconCircle = Instance.new("Frame")
+    iconCircle.Size = UDim2.fromOffset(38, 38)
+    iconCircle.Position = UDim2.fromOffset(8, 7)
+    iconCircle.BackgroundColor3 = Color3.fromRGB(44, 30, 112)
+    iconCircle.BorderSizePixel = 0
+    iconCircle.ZIndex = 6
+    iconCircle.Parent = row
+
+    addCorner(iconCircle, 19)
+    addStroke(iconCircle, strokeColor, 1.5, 0.3)
+
+    local icon = Instance.new("TextLabel")
+    icon.Size = UDim2.fromScale(1, 1)
+    icon.BackgroundTransparency = 1
+    icon.Text = meta[1]
+    icon.TextSize = 19
+    icon.Font = Enum.Font.GothamBold
+    icon.TextColor3 = WHITE
+    icon.ZIndex = 7
+    icon.Parent = iconCircle
+
+    local rightReserve = isAction and 126 or 78
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -(56 + rightReserve), 0, 20)
+    titleLabel.Position = UDim2.fromOffset(56, 8)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = meta[2]
+    titleLabel.TextColor3 = WHITE
+    titleLabel.TextSize = 15
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    titleLabel.ZIndex = 6
+    titleLabel.Parent = row
+
+    local subLabel = Instance.new("TextLabel")
+    subLabel.Size = UDim2.new(1, -(56 + rightReserve), 0, 16)
+    subLabel.Position = UDim2.fromOffset(56, 28)
+    subLabel.BackgroundTransparency = 1
+    subLabel.Text = meta[3]
+    subLabel.TextColor3 = Color3.fromRGB(165, 170, 225)
+    subLabel.TextSize = 11
+    subLabel.Font = Enum.Font.Gotham
+    subLabel.TextXAlignment = Enum.TextXAlignment.Left
+    subLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    subLabel.ZIndex = 6
+    subLabel.Parent = row
+
+    local applyState
+
+    if isAction then
+        local actionPill = Instance.new("Frame")
+        actionPill.Size = UDim2.fromOffset(108, 32)
+        actionPill.AnchorPoint = Vector2.new(1, 0.5)
+        actionPill.Position = UDim2.new(1, -10, 0.5, 0)
+        actionPill.BackgroundColor3 = WHITE
+        actionPill.BorderSizePixel = 0
+        actionPill.ZIndex = 6
+        actionPill.Parent = row
+
+        addCorner(actionPill, 16)
+        addStroke(actionPill, Color3.fromRGB(150, 180, 255), 1.5, 0.2)
+
+        local pillGradient = Instance.new("UIGradient")
+        pillGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 80, 235)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(95, 60, 220))
+        })
+        pillGradient.Parent = actionPill
+
+        local pillText = Instance.new("TextLabel")
+        pillText.Size = UDim2.fromScale(1, 1)
+        pillText.BackgroundTransparency = 1
+        pillText.Text = "GO TO KUKI  ›"
+        pillText.TextColor3 = WHITE
+        pillText.TextSize = 12
+        pillText.Font = Enum.Font.GothamBold
+        pillText.ZIndex = 7
+        pillText.Parent = actionPill
+    else
+        local track = Instance.new("Frame")
+        track.Size = UDim2.fromOffset(48, 26)
+        track.AnchorPoint = Vector2.new(1, 0.5)
+        track.Position = UDim2.new(1, -14, 0.5, 0)
+        track.BackgroundColor3 = ROW_OFF_COLOR
+        track.BorderSizePixel = 0
+        track.ZIndex = 6
+        track.Parent = row
+
+        addCorner(track, 13)
+
+        local knob = Instance.new("Frame")
+        knob.Size = UDim2.fromOffset(20, 20)
+        knob.Position = UDim2.fromOffset(3, 3)
+        knob.BackgroundColor3 = Color3.fromRGB(255, 235, 240)
+        knob.BorderSizePixel = 0
+        knob.ZIndex = 7
+        knob.Parent = track
+
+        addCorner(knob, 10)
+
+        applyState = function(on, animate)
+            local duration = animate and 0.18 or 0
+
+            makeTween(track, duration, {
+                BackgroundColor3 = on and ROW_ON_COLOR or ROW_OFF_COLOR
+            })
+            makeTween(knob, duration, {
+                Position = on and UDim2.fromOffset(25, 3)
+                    or UDim2.fromOffset(3, 3)
+            })
+            makeTween(rowStroke, duration, {
+                Color = on and Color3.fromRGB(60, 230, 140)
+                    or Color3.fromRGB(95, 85, 230),
+                Transparency = on and 0.15 or 0.35
+            })
+        end
+    end
+
+    -- Unsichtbarer Klick-Layer (Text steuert den Schalter)
     local b = Instance.new("TextButton")
     b.Name = name
-    b.Size = UDim2.new(1, -32, 0, 42)
-    b.Position = UDim2.fromOffset(16, y)
-    b.BackgroundColor3 = baseColor
+    b.Size = UDim2.fromScale(1, 1)
+    b.BackgroundTransparency = 1
     b.Text = text
-    b.TextColor3 = WHITE
-    b.TextSize = 16
-    b.Font = Enum.Font.GothamBold
+    b.TextTransparency = 1
+    b.TextStrokeTransparency = 1
     b.AutoButtonColor = false
     b.BorderSizePixel = 0
-    b.ZIndex = 5
-    b.Parent = main
-
-    addCorner(b, 13)
-    local stroke = addStroke(b, strokeColor, 1.5)
+    b.ZIndex = 10
+    b.Parent = row
 
     local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, gradientColors[1]),
-        ColorSequenceKeypoint.new(1, gradientColors[2])
-    })
     gradient.Parent = b
 
+    local stroke = Instance.new("UIStroke")   -- Platzhalter (ohne Wirkung)
+    stroke.Thickness = 0
+
+    if applyState then
+        local function isOn()
+            return string.match(b.Text, ":%s*ON$") ~= nil
+        end
+
+        applyState(isOn(), false)
+
+        b:GetPropertyChangedSignal("Text"):Connect(function()
+            applyState(isOn(), true)
+        end)
+    end
+
     b.MouseEnter:Connect(function()
-        if b.Parent then
-            makeTween(stroke, 0.15, {Thickness = 2})
+        if row.Parent then
+            makeTween(rowStroke, 0.15, {Thickness = 2})
         end
     end)
 
     b.MouseLeave:Connect(function()
-        if b.Parent then
-            makeTween(stroke, 0.15, {Thickness = 1.5})
+        if row.Parent then
+            makeTween(rowStroke, 0.15, {Thickness = 1.2})
         end
     end)
 
@@ -480,32 +770,6 @@ local kukiButton, kukiStroke, kukiGradient = createButton(
         Color3.fromRGB(35, 95, 120)
     }
 )
-
--- SPEED READOUT LABEL
-local speedLabel = Instance.new("TextLabel")
-speedLabel.Name = "SpeedLabel"
-speedLabel.Size = UDim2.new(1, -28, 0, 22)
-speedLabel.Position = UDim2.fromOffset(14, 525)
-speedLabel.BackgroundTransparency = 1
-speedLabel.Text = "SPEED: 0 KM/H"
-speedLabel.TextColor3 = WHITE
-speedLabel.TextSize = 13
-speedLabel.Font = Enum.Font.GothamBold
-speedLabel.TextXAlignment = Enum.TextXAlignment.Left
-speedLabel.ZIndex = 4
-speedLabel.Parent = main
-
--- FOOTER
-local footer = Instance.new("TextLabel")
-footer.Size = UDim2.new(1, 0, 0, 20)
-footer.Position = UDim2.new(0, 0, 1, -22)
-footer.BackgroundTransparency = 1
-footer.Text = "KUKIRIN V3 (made by bdaircool)"
-footer.TextColor3 = Color3.fromRGB(200, 190, 230)
-footer.TextSize = 10
-footer.Font = Enum.Font.GothamMedium
-footer.ZIndex = 4
-footer.Parent = main
 
 -- DRAGGING
 local dragging = false
@@ -1913,22 +2177,14 @@ task.spawn(function()
             speedLabel.Text = "SPEED: 0 KM/H"
         end
 
-        task.wait(3)
+        task.wait(0.4)
     end
 end)
 
 -- MINIMIZE AND RESTORE
 local function setContentVisible(visible)
-    status.Visible = visible
-    antiCrashButton.Visible = visible
-    antiFallButton.Visible = visible
-    autoBrakeButton.Visible = visible
-    walkButton.Visible = visible
-    ragdollButton.Visible = visible
-    robotButton.Visible = visible
-    kukiButton.Visible = visible
-    speedLabel.Visible = visible
-    footer.Visible = visible
+    panel.Visible = visible
+    footerBar.Visible = visible
 end
 
 minimize.Activated:Connect(function()
@@ -1940,13 +2196,13 @@ minimize.Activated:Connect(function()
         setContentVisible(false)
 
         makeTween(main, 0.22, {
-            Size = UDim2.fromOffset(320, 45)
+            Size = UDim2.fromOffset(WIDTH, 56)
         })
     else
         minimize.Text = "-"
 
         makeTween(main, 0.22, {
-            Size = UDim2.fromOffset(320, FULL_HEIGHT)
+            Size = UDim2.fromOffset(WIDTH, FULL_HEIGHT)
         })
 
         task.delay(0.23, function()
@@ -2053,12 +2309,12 @@ task.spawn(function()
 end)
 
 -- INTRO ANIMATION
-main.Size = UDim2.fromOffset(280, 240)
+main.Size = UDim2.fromOffset(300, 260)
 
 makeTween(
     main,
     0.4,
-    {Size = UDim2.fromOffset(320, FULL_HEIGHT)},
+    {Size = UDim2.fromOffset(WIDTH, FULL_HEIGHT)},
     Enum.EasingStyle.Back
 )
 
